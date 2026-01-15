@@ -5,18 +5,10 @@
     <style>
         :root { --accent: #00f2ff; --twitter: #1DA1F2; }
         body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Oswald', sans-serif; color: white; }
-        
-        /* 1. Studio Background */
         .studio-bg { position: absolute; width: 100%; height: 100%; background: url('studio.jpg') no-repeat center center; background-size: cover; z-index: 1; }
-        
-        /* 2. Topic Screen */
         .display-unit { position: absolute; left: 80px; top: 120px; width: 850px; height: 500px; border: 5px solid var(--accent); z-index: 10; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 0 50px rgba(0,242,255,0.4); }
         #trendImg { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* 3. Script Box */
-        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 15, 0.95); border-left: 12px solid var(--twitter); padding: 30px; font-size: 38px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.4; color: #fff; }
-
-        /* 4. Anchor Video */
+        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 15, 0.95); border-left: 12px solid var(--twitter); padding: 30px; font-size: 38px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.4; color: #fff; min-height: 150px; }
         .anchor-container { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; z-index: 5; }
         #anchorVideo { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -24,20 +16,15 @@
 <body>
 
 <div class="studio-bg"></div>
-
 <div class="display-unit">
     <img id="trendImg" src="">
     <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:20px; font-size:40px; border-top:2px solid var(--accent);">खबर लोड हो रही है...</div>
 </div>
-
 <div class="analysis-box" id="analysisText">AI न्यूज़ रूम तैयार है। कृपया स्क्रीन पर एक बार क्लिक करें...</div>
-
-<div class="anchor-container">
-    <video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video>
-</div>
+<div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
 
 <script>
-    // 🔴 यहाँ अपनी सही डिटेल्स भरें
+    // 🔴 अपनी डिटेल्स यहाँ भरें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
@@ -49,11 +36,9 @@
         try {
             const res = await fetch(CSV_URL + '&cb=' + Date.now());
             const text = await res.text();
-            // Header हटाकर टॉपिक्स लेना
-            newsItems = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r !== "");
-            
+            newsItems = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r !== "" && r.length > 2);
             if(newsItems.length > 0) processTopic();
-            else document.getElementById('analysisText').innerText = "Sheet में कोई टॉपिक नहीं मिला!";
+            else document.getElementById('analysisText').innerText = "Sheet में टॉपिक नहीं मिला!";
         } catch (e) { document.getElementById('analysisText').innerText = "Sheet Connection Error!"; }
     }
 
@@ -62,35 +47,38 @@
         document.getElementById('trendTitle').innerText = topic;
         document.getElementById('analysisText').innerText = "AI विश्लेषण कर रहा है...";
 
-        // 🟢 AI Studio वाला मॉडल URL
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // 🟢 v1 endpoint सबसे स्टेबल है
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         
         const payload = {
-            contents: [{ parts: [{ text: `Topic: "${topic}". Act as a Hindi News Anchor. Write 3 dramatic lines. Format strictly: ImageKeyword|Hashtag|Script` }] }]
+            contents: [{ parts: [{ text: `Write a news report about "${topic}" in 3 lines of Hindi. Also give 1 English keyword for a photo. Format: keyword | script` }] }]
         };
 
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: { 'Content-Type': 'application/json' }
-            });
-
+            const response = await fetch(url, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
             const data = await response.json();
             
-            if(data.candidates && data.candidates[0].content) {
-                const responseText = data.candidates[0].content.parts[0].text;
-                const [kw, hash, script] = responseText.split('|');
-                
-                document.getElementById('analysisText').innerText = script.trim();
-                document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${kw.trim()}`;
-                
-                speak(script.trim());
+            if (data.candidates && data.candidates[0].content) {
+                let responseText = data.candidates[0].content.parts[0].text;
+                let kw = "news";
+                let script = responseText;
+
+                // Smart Parsing: अगर | सिंबल है तो अलग करो, वरना पूरा टेक्स्ट स्क्रिप्ट मान लो
+                if (responseText.includes('|')) {
+                    const parts = responseText.split('|');
+                    kw = parts[0].trim();
+                    script = parts[1].trim();
+                }
+
+                document.getElementById('analysisText').innerText = script;
+                document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${kw}`;
+                speak(script);
             } else {
-                throw new Error("Invalid Response");
+                throw new Error("AI Error");
             }
         } catch (e) { 
-            document.getElementById('analysisText').innerText = "AI Response में समस्या है। कृपया कीवर्ड चेक करें।";
+            document.getElementById('analysisText').innerText = "AI Response Error. Retrying in 5s...";
+            setTimeout(processTopic, 5000);
         }
     }
 
@@ -98,20 +86,17 @@
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(textToSay);
         msg.lang = 'hi-IN';
-        msg.rate = 0.95; // बोलने की रफ़्तार
-
+        msg.rate = 0.9;
         const video = document.getElementById('anchorVideo');
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
-            // अगली खबर पर जाना
             currentIdx = (currentIdx + 1) % newsItems.length;
-            setTimeout(processTopic, 6000); // 6 सेकंड का ब्रेक खबरों के बीच
+            setTimeout(processTopic, 6000);
         };
         window.speechSynthesis.speak(msg);
     }
 
-    // OBS में Interact बटन दबाकर एक बार क्लिक ज़रूर करें
     window.onclick = () => startNews();
 </script>
 </body>
