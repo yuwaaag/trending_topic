@@ -2,123 +2,87 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Final Success Studio</title>
+    <title>PTN News Secure System</title>
     <style>
-        /* पूरे स्क्रीन की सेटिंग */
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #000; font-family: 'Segoe UI', sans-serif; 
-            overflow: hidden; color: white;
-        }
-
-        /* स्टूडियो बैकग्राउंड - यह अब पूरे स्क्रीन पर दिखेगा */
-        .studio-bg { 
-            position: absolute; width: 100%; height: 100%; 
-            background: url('studio.jpg') no-repeat center center; 
-            background-size: cover; z-index: 1; 
-        }
-
-        /* न्यूज़ फोटो डिस्प्ले - लेफ्ट साइड में ऊपर */
-        .display-unit { 
-            position: absolute; left: 50px; top: 80px; 
-            width: 750px; height: 420px; 
-            border: 5px solid #00f2ff; border-radius: 15px; 
-            z-index: 10; overflow: hidden; background: #111;
-            box-shadow: 0 0 30px rgba(0,242,255,0.5);
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
+        .studio-container { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') no-repeat center center; background-size: cover; }
+        .news-window { position: absolute; left: 5%; top: 10%; width: 40%; height: 40%; border: 4px solid #00f2ff; border-radius: 12px; overflow: hidden; z-index: 10; }
         #newsImg { width: 100%; height: 100%; object-fit: cover; }
-
-        /* न्यूज़ हेडलाइन और विश्लेषण बॉक्स - नीचे की तरफ */
-        .analysis-box { 
-            position: absolute; left: 50px; bottom: 50px; 
-            width: 850px; min-height: 350px;
-            background: rgba(0, 10, 30, 0.9); 
-            border-left: 15px solid #ff0000; 
-            padding: 30px; z-index: 15; 
-            border-radius: 0 20px 20px 0;
-            box-sizing: border-box;
-        }
-        #headline { color: #00f2ff; font-size: 38px; margin: 0 0 15px 0; text-transform: uppercase; }
-        #content { font-size: 30px; line-height: 1.5; color: #fff; }
-
-        /* एंकर वीडियो - राइट साइड में */
-        .anchor-zone { 
-            position: absolute; right: 0; bottom: 0; 
-            width: 900px; height: 100%; 
-            z-index: 5; display: flex; align-items: flex-end;
-        }
-        #anchorVid { width: 100%; height: 90%; object-fit: contain; }
+        .analysis-box { position: absolute; left: 5%; bottom: 8%; width: 45%; height: 35%; background: rgba(0, 8, 20, 0.9); border-left: 12px solid #ff0000; padding: 25px; z-index: 20; box-sizing: border-box; color: white; }
+        #content { font-size: 26px; line-height: 1.5; overflow-y: auto; height: 80%; }
+        .anchor-box { position: absolute; right: 0; bottom: 0; width: 50%; height: 95%; z-index: 5; }
+        video { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
 
-<div class="studio-bg"></div>
-
-<div class="display-unit">
-    <img id="newsImg" src="">
+<div class="studio-container">
+    <div class="news-window"><img id="newsImg" src=""></div>
+    <div class="analysis-box">
+        <h1 id="headline" style="color:#00f2ff; font-size: 32px; margin:0;">PTN NEWS</h1>
+        <div id="content" style="color: yellow; margin-top:10px;">की (Key) डालने के लिए स्क्रीन पर क्लिक करें।</div>
+    </div>
+    <div class="anchor-box">
+        <video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
+    </div>
 </div>
 
-<div class="analysis-box">
-    <h1 id="headline">PTN न्यूज़ विश्लेषण</h1>
-    <p id="content">शुरू करने के लिए स्क्रीन पर क्लिक करें...</p>
-</div>
+<script type="importmap">
+  {
+    "imports": {
+      "@google/generative-ai": "https://esm.run/@google/generative-ai"
+    }
+  }
+</script>
 
-<div class="anchor-zone">
-    <video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
-</div>
+<script type="module">
+    import { GoogleGenerativeAI } from "@google/generative-ai";
 
-<script>
-    // 🔴 यहाँ अपनी API Key डालें
-    const API_KEY = "AIzaSyB0rTzlgnkcJn02amykEQ_edXkEs1qtm14"; 
+    let API_KEY = "";
 
-    async function startPTNNews() {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
-        
+    window.startSecureSystem = async function() {
+        // अगर की (Key) नहीं है, तो पूछें
+        if (!API_KEY) {
+            API_KEY = prompt("सुरक्षा के लिए अपनी Gemini API Key यहाँ डालें:");
+            if (!API_KEY) return alert("Key के बिना सिस्टम नहीं चलेगा!");
+        }
+
+        const responseDiv = document.getElementById("content");
+        responseDiv.innerText = "सुरक्षित कनेक्शन बनाया जा रहा है...";
+
         try {
-            // 1. ट्रेंडिंग खबर
-            const resTopic = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: "Top 1 trending news topic in India today." }] }] })
-            });
-            const dataTopic = await resTopic.json();
-            const topic = dataTopic.candidates[0].content.parts[0].text.trim();
-            
-            document.getElementById('headline').innerText = "BREAKING: " + topic;
-            document.getElementById('newsImg').src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20for%20${encodeURIComponent(topic)}?nologo=true`;
+            const genAI = new GoogleGenerativeAI(API_KEY);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-            // 2. विश्लेषण
-            const resAnalysis = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Aap news analyst hain. Topic "${topic}" par 120 words ka news analysis Hindi mein likhein. Namaskar se shuru karein.` }] }] })
-            });
-            const dataAnalysis = await resAnalysis.json();
-            const script = dataAnalysis.candidates[0].content.parts[0].text;
+            // स्टेप 1: खबर खोजना
+            const topicResult = await model.generateContent("Give me 1 major trending news headline in India today.");
+            const topic = topicResult.response.text().trim();
+            document.getElementById("headline").innerText = "ब्रेकिंग: " + topic;
+            document.getElementById('newsImg').src = `https://image.pollinations.ai/prompt/news%20on%20${encodeURIComponent(topic)}?nologo=true`;
+
+            // स्टेप 2: विश्लेषण
+            const analysisResult = await model.generateContent(`Aap PTN News analyst hain. Topic "${topic}" par 100 words ka Hindi analysis likhein.`);
+            const text = analysisResult.response.text();
             
-            speakText(script);
-        } catch (e) {
-            document.getElementById('content').innerText = "Error! चेक करें कि studio.jpg और एंकर वीडियो सही नाम से हैं।";
+            speak(text);
+        } catch (error) {
+            alert("गलत API Key या कनेक्शन एरर!");
+            API_KEY = ""; // गलत की होने पर रिसेट करें
         }
     }
 
-    function speakText(txt) {
+    function speak(txt) {
         document.getElementById('content').innerText = txt;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
-        msg.rate = 0.9;
-        
         const v = document.getElementById('anchorVid');
         msg.onstart = () => v.play();
-        msg.onend = () => {
-            v.pause();
-            setTimeout(startPTNNews, 15000);
-        };
+        msg.onend = () => { v.pause(); setTimeout(window.startSecureSystem, 15000); };
         window.speechSynthesis.speak(msg);
     }
 
-    window.onclick = () => startPTNNews();
+    window.onclick = () => window.startSecureSystem();
 </script>
 </body>
 </html>
