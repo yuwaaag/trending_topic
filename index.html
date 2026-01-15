@@ -2,22 +2,14 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Full Success</title>
+    <title>AI News Room Final</title>
     <style>
-        :root { --accent: #00f2ff; --twitter: #1DA1F2; }
+        :root { --accent: #00f2ff; }
         body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; color: white; }
-        
-        /* Studio Background */
         .studio-bg { position: absolute; width: 100%; height: 100%; background: url('studio.jpg') no-repeat center center; background-size: cover; z-index: 1; }
-        
-        /* Photo Display Unit */
-        .display-unit { position: absolute; left: 80px; top: 120px; width: 850px; height: 500px; border: 5px solid var(--accent); z-index: 10; border-radius: 20px; overflow: hidden; background: #111; box-shadow: 0 0 50px rgba(0,242,255,0.4); }
+        .display-unit { position: absolute; left: 80px; top: 120px; width: 850px; height: 500px; border: 5px solid var(--accent); z-index: 10; border-radius: 20px; overflow: hidden; background: #111; }
         #trendImg { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* News Script Box */
-        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 20, 0.95); border-left: 15px solid var(--twitter); padding: 35px; font-size: 42px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.5; font-weight: bold; min-height: 220px; }
-
-        /* Anchor Video Container */
+        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 20, 0.95); border-left: 15px solid #1DA1F2; padding: 35px; font-size: 42px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.5; font-weight: bold; min-height: 220px; }
         .anchor-container { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; z-index: 5; }
         #anchorVideo { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -25,20 +17,15 @@
 <body>
 
 <div class="studio-bg"></div>
-
 <div class="display-unit">
-    <img id="trendImg" src="https://via.placeholder.com/850x500/000/fff?text=Waiting+for+AI...">
-    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:20px; font-size:40px; border-top:2px solid var(--accent);">जुड़ रहा है...</div>
+    <img id="trendImg" src="">
+    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:20px; font-size:40px;">खबर लोड हो रही है...</div>
 </div>
-
-<div class="analysis-box" id="analysisText">न्यूज़ रूम तैयार है। शुरू करने के लिए 'Interact' दबाकर यहाँ एक बार क्लिक करें।</div>
-
-<div class="anchor-container">
-    <video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video>
-</div>
+<div class="analysis-box" id="analysisText">शुरू करने के लिए 'Interact' दबाकर एक बार क्लिक करें।</div>
+<div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
 
 <script>
-    // 🔴 यहाँ अपनी सही डिटेल्स भरें
+    // 🔴 अपनी डिटेल्स यहाँ डालें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
@@ -46,73 +33,69 @@
     let newsItems = [];
     let currentIdx = 0;
 
-    // 1. गूगल शीट से डेटा लाना
-    async function startApp() {
+    async function startNews() {
         try {
             const res = await fetch(CSV_URL + '&cb=' + Date.now());
             const text = await res.text();
             newsItems = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r.length > 2);
-            
             if(newsItems.length > 0) processNews();
-            else document.getElementById('analysisText').innerText = "Sheet में कोई टॉपिक नहीं मिला!";
-        } catch (e) { 
-            document.getElementById('analysisText').innerText = "Sheet Error: लिंक चेक करें।"; 
-        }
+            else document.getElementById('analysisText').innerText = "Sheet खाली है!";
+        } catch (e) { document.getElementById('analysisText').innerText = "Sheet Error!"; }
     }
 
-    // 2. Gemini AI से न्यूज़ लिखवाना
     async function processNews() {
         const topic = newsItems[currentIdx];
         document.getElementById('trendTitle').innerText = topic;
-        document.getElementById('analysisText').innerText = "AI न्यूज़ तैयार कर रहा है...";
-        
-        // फोटो लोड करना (यह अब काम कर रहा है)
-        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/news%20scene%20of%20${encodeURIComponent(topic)}?width=850&height=500&nologo=true`;
+        document.getElementById('analysisText').innerText = "AI स्क्रिप्ट लिख रहा है...";
+        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/news%20of%20${encodeURIComponent(topic)}?width=850&height=500&nologo=true`;
 
-        // 🟢 FIX: सही API URL और Model Name
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-        
-        const payload = {
-            contents: [{ parts: [{ text: `Aap ek professional news anchor hain. Topic "${topic}" par 3 line ki news report Hindi mein likhein. Simple aur damdar Hindi honi chahiye. Sirf news likhein.` }] }]
-        };
+        // 🟢 'v1beta' और 'v1' दोनों को आज़माने के लिए लूप
+        const endpoints = [
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`
+        ];
 
-        try {
-            const response = await fetch(url, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
-            const data = await response.json();
-            
-            if (data.candidates && data.candidates[0].content) {
-                const script = data.candidates[0].content.parts[0].text.trim();
-                document.getElementById('analysisText').innerText = script;
-                speak(script); // आवाज़ शुरू करना
-            } else {
-                throw new Error("API Failure");
-            }
-        } catch (e) { 
-            document.getElementById('analysisText').innerText = "AI व्यस्त है, 5 सेकंड में दोबारा कोशिश...";
-            setTimeout(processNews, 5000);
+        let success = false;
+        for (let url of endpoints) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Write 3 lines news in Hindi about ${topic}. Simple and dramatic.` }] }] })
+                });
+                const data = await response.json();
+                if (data.candidates && data.candidates[0].content) {
+                    const script = data.candidates[0].content.parts[0].text.trim();
+                    document.getElementById('analysisText').innerText = script;
+                    speak(script);
+                    success = true;
+                    break; // अगर सफल रहा तो लूप रोक दें
+                }
+            } catch (e) { console.log("Retrying next endpoint..."); }
+        }
+
+        if (!success) {
+            document.getElementById('analysisText').innerText = "AI रिस्पांस एरर। 10 सेकंड में फिर कोशिश...";
+            setTimeout(processNews, 10000);
         }
     }
 
-    // 3. न्यूज़ पढ़ना (Awaaz)
-    function speak(text) {
-        window.speechSynthesis.cancel(); // पुरानी आवाज़ बंद करें
-        const msg = new SpeechSynthesisUtterance(text);
+    function speak(txt) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
-        msg.rate = 0.95; // बोलने की रफ़्तार
-        
+        msg.rate = 0.95;
         const video = document.getElementById('anchorVideo');
-        
-        msg.onstart = () => video.play(); // बोलना शुरू तो वीडियो शुरू
+        msg.onstart = () => video.play();
         msg.onend = () => {
-            video.pause(); // बोलना खत्म तो वीडियो बंद
-            currentIdx = (currentIdx + 1) % newsItems.length; // अगली न्यूज़
-            setTimeout(processNews, 8000); // 8 सेकंड का ब्रेक
+            video.pause();
+            currentIdx = (currentIdx + 1) % newsItems.length;
+            setTimeout(processNews, 7000);
         };
         window.speechSynthesis.speak(msg);
     }
 
-    // 🔴 ज़रूरी: OBS में क्लिक करने पर ही शुरू होगा
-    window.onclick = () => startApp();
+    window.onclick = () => startNews();
 </script>
 </body>
 </html>
