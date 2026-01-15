@@ -2,12 +2,12 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Final Fix</title>
+    <title>PTN News - Final Solution</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
-        .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; background-color: #111; }
-        .news-img { position: absolute; left: 5%; top: 10%; width: 40%; height: 40%; border: 4px solid #00f2ff; border-radius: 12px; overflow: hidden; background: #000; }
-        .analysis { position: absolute; left: 5%; bottom: 8%; width: 45%; height: 35%; background: rgba(0,8,20,0.95); border-left: 10px solid red; padding: 20px; box-sizing: border-box; }
+        .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; }
+        .news-img { position: absolute; left: 5%; top: 10%; width: 40%; height: 40%; border: 4px solid #00f2ff; border-radius: 12px; overflow: hidden; background: #111; }
+        .analysis { position: absolute; left: 5%; bottom: 8%; width: 45%; height: 40%; background: rgba(0,8,20,0.95); border-left: 10px solid red; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .anchor { position: absolute; right: 0; bottom: 0; width: 50%; height: 95%; }
         video { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -15,10 +15,10 @@
 <body>
 
 <div class="studio">
-    <div class="news-img"><img id="newsImg" src="" style="width:100%; height:100%; object-fit:cover; display:none;"></div>
+    <div class="news-img"><img id="newsImg" src="" style="width:100%; height:100%; object-fit:cover;"></div>
     <div class="analysis">
         <h1 id="title" style="color:#00f2ff; font-size: 28px; margin:0;">PTN NEWS</h1>
-        <p id="msg" style="font-size: 24px; color: yellow;">सिस्टम तैयार है। शुरू करने के लिए क्लिक करें।</p>
+        <p id="msg" style="font-size: 22px; color: yellow;">सिस्टम अपडेट हो गया है। शुरू करने के लिए क्लिक करें।</p>
     </div>
     <div class="anchor">
         <video id="vid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
@@ -32,58 +32,52 @@
 <script type="module">
     import { GoogleGenerativeAI } from "@google/generative-ai";
 
+    let userApiKey = ""; 
+
     window.runPTN = async function() {
-        // हर बार क्लिक करने पर नई Key पूछेगा ताकि पुरानी गलत Key हट जाए
-        const inputKey = prompt("अपनी बिल्कुल नई Gemini API Key यहाँ पेस्ट करें:");
-        if (!inputKey) return;
+        if (!userApiKey) {
+            userApiKey = prompt("अपनी नई Gemini API Key यहाँ डालें:");
+            if (!userApiKey) return;
+        }
 
         const msgBox = document.getElementById("msg");
-        msgBox.innerText = "AI मॉडल से जुड़ रहा हूँ... कृपया रुकें।";
+        msgBox.innerHTML = "AI से ताज़ा खबरें प्राप्त की जा रही हैं...";
 
         try {
-            const genAI = new GoogleGenerativeAI(inputKey);
-            // मॉडल को थोडा बदल कर देखते हैं (gemini-1.5-flash)
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-            const promptText = "Give me 1 major trending news topic in India today. Just the name.";
-            const result = await model.generateContent(promptText);
-            const response = await result.response;
-            const topic = response.text().trim();
+            const genAI = new GoogleGenerativeAI(userApiKey);
             
-            document.getElementById("title").innerText = "BREAKING: " + topic;
-            const img = document.getElementById("newsImg");
-            img.src = `https://image.pollinations.ai/prompt/news%20scene%20of%20${encodeURIComponent(topic)}?nologo=true`;
-            img.style.display = "block";
+            // 🔴 सुधार: यहाँ 'gemini-1.5-flash-latest' का उपयोग किया गया है
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-            const analysisResult = await model.generateContent(`Aap ek news anchor hain. Topic "${topic}" par 80 words ka Hindi analysis karein. Shuruat Namaskar se karein.`);
+            const result = await model.generateContent("Give me 1 trending news headline in India. Just the topic name.");
+            const topic = result.response.text().trim();
+            
+            document.getElementById("title").innerText = "ब्रेकिंग: " + topic;
+            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/news%20on%20${encodeURIComponent(topic)}?nologo=true`;
+
+            const analysisResult = await model.generateContent(`Aap professional news anchor hain. Topic "${topic}" par 100 words ka Hindi analysis karein.`);
             const finalTxt = analysisResult.response.text();
             
-            speakNow(finalTxt, inputKey); // Key पास कर रहे हैं ताकि अगला राउंड चले
+            speakNow(finalTxt);
         } catch (err) {
-            console.error(err);
-            msgBox.innerHTML = "<span style='color:red;'>त्रुटि: " + err.message + "</span><br>कृपया चेक करें कि क्या आपकी Key 'Active' है।";
+            msgBox.innerHTML = "<span style='color:red;'>त्रुटि: " + err.message + "</span>";
+            userApiKey = ""; 
         }
     }
 
-    function speakNow(txt, key) {
+    function speakNow(txt) {
         document.getElementById("msg").innerText = txt;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
-        msg.rate = 0.9;
+        msg.rate = 0.95;
         const v = document.getElementById("vid");
         msg.onstart = () => v.play();
-        msg.onend = () => { 
-            v.pause(); 
-            msgBox.innerText = "अगली खबर की तैयारी...";
-            // बिना दोबारा पूछे अगला चलाने के लिए यहाँ लॉजिक डाल सकते हैं
-        };
+        msg.onend = () => { v.pause(); setTimeout(window.runPTN, 15000); };
         window.speechSynthesis.speak(msg);
     }
 
-    window.addEventListener('click', () => {
-        window.runPTN();
-    }, { once: true }); // सिर्फ पहली बार क्लिक पर चले
+    window.addEventListener('click', () => window.runPTN(), { once: true });
 </script>
 </body>
 </html>
