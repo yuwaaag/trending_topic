@@ -8,7 +8,7 @@
         .studio-bg { position: absolute; width: 100%; height: 100%; background: url('studio.jpg') no-repeat center center; background-size: cover; z-index: 1; }
         .display-unit { position: absolute; left: 80px; top: 120px; width: 850px; height: 500px; border: 5px solid var(--accent); z-index: 10; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 0 50px rgba(0,242,255,0.4); }
         #trendImg { width: 100%; height: 100%; object-fit: cover; }
-        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 15, 0.95); border-left: 12px solid var(--twitter); padding: 30px; font-size: 38px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.4; color: #fff; min-height: 150px; }
+        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 15, 0.95); border-left: 12px solid var(--twitter); padding: 30px; font-size: 38px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.4; color: #fff; min-height: 180px; }
         .anchor-container { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; z-index: 5; }
         #anchorVideo { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -20,11 +20,11 @@
     <img id="trendImg" src="">
     <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:20px; font-size:40px; border-top:2px solid var(--accent);">खबर लोड हो रही है...</div>
 </div>
-<div class="analysis-box" id="analysisText">AI न्यूज़ रूम तैयार है। कृपया स्क्रीन पर एक बार क्लिक करें...</div>
+<div class="analysis-box" id="analysisText">शुरू करने के लिए स्क्रीन पर एक बार क्लिक करें...</div>
 <div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
 
 <script>
-    // 🔴 अपनी डिटेल्स यहाँ भरें
+    // 🔴 यहाँ अपनी सही डिटेल्स भरें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
@@ -47,11 +47,11 @@
         document.getElementById('trendTitle').innerText = topic;
         document.getElementById('analysisText').innerText = "AI विश्लेषण कर रहा है...";
 
-        // 🟢 v1 endpoint सबसे स्टेबल है
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         
+        // प्रॉम्ट को और भी सरल बना दिया है ताकि AI कंफ्यूज न हो
         const payload = {
-            contents: [{ parts: [{ text: `Write a news report about "${topic}" in 3 lines of Hindi. Also give 1 English keyword for a photo. Format: keyword | script` }] }]
+            contents: [{ parts: [{ text: `Topic: "${topic}". Act as News Anchor. Write 3 lines in Hindi news style about this topic.` }] }]
         };
 
         try {
@@ -59,26 +59,20 @@
             const data = await response.json();
             
             if (data.candidates && data.candidates[0].content) {
-                let responseText = data.candidates[0].content.parts[0].text;
-                let kw = "news";
-                let script = responseText;
-
-                // Smart Parsing: अगर | सिंबल है तो अलग करो, वरना पूरा टेक्स्ट स्क्रिप्ट मान लो
-                if (responseText.includes('|')) {
-                    const parts = responseText.split('|');
-                    kw = parts[0].trim();
-                    script = parts[1].trim();
-                }
-
+                let script = data.candidates[0].content.parts[0].text.trim();
+                
+                // स्क्रीन पर टेक्स्ट दिखाना
                 document.getElementById('analysisText').innerText = script;
-                document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${kw}`;
+                // टॉपिक के हिसाब से फोटो लोड करना
+                document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${encodeURIComponent(topic)}`;
+                
                 speak(script);
             } else {
-                throw new Error("AI Error");
+                throw new Error("AI Busy");
             }
         } catch (e) { 
-            document.getElementById('analysisText').innerText = "AI Response Error. Retrying in 5s...";
-            setTimeout(processTopic, 5000);
+            document.getElementById('analysisText').innerText = "AI Response Error. Retrying...";
+            setTimeout(processTopic, 3000);
         }
     }
 
@@ -87,12 +81,13 @@
         const msg = new SpeechSynthesisUtterance(textToSay);
         msg.lang = 'hi-IN';
         msg.rate = 0.9;
+        
         const video = document.getElementById('anchorVideo');
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
             currentIdx = (currentIdx + 1) % newsItems.length;
-            setTimeout(processTopic, 6000);
+            setTimeout(processTopic, 5000); // अगली खबर 5 सेकंड बाद
         };
         window.speechSynthesis.speak(msg);
     }
