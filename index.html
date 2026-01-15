@@ -16,12 +16,15 @@
 <body>
 
 <div class="studio-bg"></div>
-<div class="display-unit"><img id="trendImg" src=""><div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.8); padding:15px;">Loading...</div></div>
-<div class="analysis-box" id="analysisText">कृपया स्क्रीन पर एक बार क्लिक करें...</div>
+<div class="display-unit">
+    <img id="trendImg" src="">
+    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.8); padding:15px; font-size:40px;">Waiting...</div>
+</div>
+<div class="analysis-box" id="analysisText">कृपया स्क्रीन पर क्लिक करें...</div>
 <div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
 
 <script>
-    // 🔴 यहाँ अपनी सही डिटेल्स भरें
+    // 🔴 अपनी डिटेल्स यहाँ भरें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
@@ -33,18 +36,20 @@
         try {
             const res = await fetch(CSV_URL + '&cb=' + Date.now());
             const text = await res.text();
-            topics = text.split('\n').slice(1).map(r => r.trim()).filter(r => r !== "");
+            // पहली लाइन (Header) को छोड़कर डेटा लेना
+            topics = text.split('\n').slice(1).map(r => r.split(',')[0].trim()).filter(r => r !== "" && r !== "Topic");
             if(topics.length > 0) callGemini();
-            else document.getElementById('analysisText').innerText = "Sheet में कोई टॉपिक नहीं मिला!";
-        } catch (e) { document.getElementById('analysisText').innerText = "Sheet Error: लिंक चेक करें"; }
+            else document.getElementById('analysisText').innerText = "Sheet खाली है!";
+        } catch (e) { document.getElementById('analysisText').innerText = "Sheet Error!"; }
     }
 
     async function callGemini() {
         const topic = topics[idx];
         document.getElementById('trendTitle').innerText = topic;
-        document.getElementById('analysisText').innerText = "AI जवाब लिख रहा है...";
+        document.getElementById('analysisText').innerText = "AI विश्लेषण कर रहा है...";
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // 🟢 FIX: v1beta को हटाकर v1 इस्तेमाल किया है
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         
         const payload = {
             contents: [{ parts: [{ text: `Topic: "${topic}". Act as News Anchor. Write 3 lines in Hindi. Format: Keyword|Hashtag|Script` }] }]
@@ -59,14 +64,16 @@
 
             const data = await response.json();
             
-            // अगर API में कोई दिक्कत है तो यहाँ पकड़ी जाएगी
             if(data.error) {
-                document.getElementById('analysisText').innerText = "API Error: " + data.error.message;
+                document.getElementById('analysisText').innerText = "Error: " + data.error.message;
                 return;
             }
 
             const raw = data.candidates[0].content.parts[0].text;
-            const [kw, hash, script] = raw.split('|');
+            const parts = raw.split('|');
+            
+            const kw = parts[0] || "news";
+            const script = parts[2] || raw;
             
             document.getElementById('analysisText').innerText = script.trim();
             document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${kw.trim()}`;
@@ -83,7 +90,7 @@
         m.onend = () => {
             document.getElementById('anchorVideo').pause();
             idx = (idx + 1) % topics.length;
-            setTimeout(callGemini, 5000);
+            setTimeout(callGemini, 5000); // 5 सेकंड का ब्रेक
         };
         window.speechSynthesis.speak(m);
     }
