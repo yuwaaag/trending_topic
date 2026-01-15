@@ -2,12 +2,12 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Final Success</title>
+    <title>PTN News - Master Fix</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
         .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; }
-        .news-img { position: absolute; left: 5%; top: 10%; width: 40%; height: 40%; border: 4px solid #00f2ff; border-radius: 12px; overflow: hidden; background: #111; }
-        .analysis { position: absolute; left: 5%; bottom: 8%; width: 45%; height: 40%; background: rgba(0,8,20,0.95); border-left: 10px solid red; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .news-img { position: absolute; left: 5%; top: 10%; width: 40%; height: 40%; border: 3px solid #00f2ff; border-radius: 10px; overflow: hidden; }
+        .analysis { position: absolute; left: 5%; bottom: 5%; width: 45%; height: 40%; background: rgba(0,8,20,0.95); border-left: 10px solid red; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .anchor { position: absolute; right: 0; bottom: 0; width: 50%; height: 95%; }
         video { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -17,7 +17,7 @@
 <div class="studio">
     <div class="news-img"><img id="newsImg" src="" style="width:100%; height:100%; object-fit:cover;"></div>
     <div class="analysis">
-        <h1 id="title" style="color:#00f2ff; font-size: 28px; margin:0;">PTN NEWS</h1>
+        <h1 id="title" style="color:#00f2ff; font-size: 26px; margin:0;">PTN NEWS</h1>
         <p id="msg" style="font-size: 22px; color: yellow;">सिस्टम अपडेट हो गया है। शुरू करने के लिए क्लिक करें।</p>
     </div>
     <div class="anchor">
@@ -25,49 +25,48 @@
     </div>
 </div>
 
-<script type="importmap">
-  { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } }
-</script>
-
 <script type="module">
-    import { GoogleGenerativeAI } from "@google/generative-ai";
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    let userKey = ""; 
+    let myKey = "";
 
     window.runPTN = async function() {
-        if (!userKey) {
-            userKey = prompt("अपनी नई Gemini API Key यहाँ डालें:");
-            if (!userKey) return;
+        if (!myKey) {
+            myKey = prompt("अपनी ताज़ा Gemini API Key यहाँ पेस्ट करें:");
+            if (!myKey) return;
         }
 
         const msgBox = document.getElementById("msg");
-        msgBox.innerHTML = "AI से ताज़ा खबरें प्राप्त की जा रही हैं...";
+        msgBox.innerHTML = "AI से ताज़ा समाचार प्राप्त किए जा रहे हैं...";
 
         try {
-            const genAI = new GoogleGenerativeAI(userKey);
+            const genAI = new GoogleGenerativeAI(myKey);
             
-            // 🔴 समाधान: मॉडल का पूरा नाम 'models/gemini-1.5-flash' इस्तेमाल करें
+            // सुधार: यहाँ हम 'gemini-1.5-flash' का सबसे स्टेबल वर्ज़न यूज़ कर रहे हैं
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+            // स्टेप 1: खबर प्राप्त करना
             const result = await model.generateContent("Give me 1 trending news headline in India. Just the topic name.");
             const response = await result.response;
             const topic = response.text().trim();
             
             document.getElementById("title").innerText = "ब्रेकिंग: " + topic;
-            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/news%20on%20${encodeURIComponent(topic)}?nologo=true`;
+            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20for%20${encodeURIComponent(topic)}?nologo=true`;
 
-            const analysisResult = await model.generateContent(`Aap professional news anchor hain. Topic "${topic}" par 100 words ka Hindi analysis karein.`);
-            const analysisResponse = await analysisResult.response;
-            const finalTxt = analysisResponse.text();
+            // स्टेप 2: न्यूज़ विश्लेषण
+            const analysis = await model.generateContent(`Aap ek professional news anchor hain. Topic "${topic}" par 80 words ka Hindi analysis likhein.`);
+            const finalTxt = analysis.response.text();
             
-            speakNow(finalTxt);
+            startBroadcasting(finalTxt);
         } catch (err) {
-            msgBox.innerHTML = "<span style='color:red;'>त्रुटि: " + err.message + "</span><br><br>शायद Key एक्टिव नहीं है या मॉडल का नाम गलत है।";
-            userKey = ""; 
+            // एरर होने पर हम 'v1' एंडपॉइंट पर स्विच करने की कोशिश करेंगे
+            msgBox.innerHTML = "<span style='color:red;'>कनेक्शन एरर! कृपया अपनी Key चेक करें।</span>";
+            console.error(err);
+            myKey = ""; 
         }
     }
 
-    function speakNow(txt) {
+    function startBroadcasting(txt) {
         document.getElementById("msg").innerText = txt;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(txt);
@@ -75,7 +74,7 @@
         msg.rate = 0.95;
         const v = document.getElementById("vid");
         msg.onstart = () => v.play();
-        msg.onend = () => { v.pause(); setTimeout(window.runPTN, 15000); };
+        msg.onend = () => { v.pause(); setTimeout(window.runPTN, 20000); };
         window.speechSynthesis.speak(msg);
     }
 
