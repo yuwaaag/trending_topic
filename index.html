@@ -2,99 +2,83 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Gemini 2.0 Flash</title>
+    <title>PTN News - Google Sheets Edition</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
-        .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; background-color: #111; }
-        .news-img { position: absolute; left: 5%; top: 10%; width: 40%; height: 40%; border: 3px solid #00f2ff; border-radius: 10px; overflow: hidden; }
-        .analysis { position: absolute; left: 5%; bottom: 5%; width: 45%; height: 40%; background: rgba(0,8,20,0.95); border-left: 10px solid red; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .anchor { position: absolute; right: 0; bottom: 0; width: 50%; height: 95%; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
+        .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; }
+        .visual-box { position: absolute; right: 5%; top: 10%; width: 45%; height: 45%; border: 4px solid #00f2ff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px #00f2ff; }
+        #newsImg { width: 100%; height: 100%; object-fit: cover; transition: opacity 1s; }
+        .script-box { position: absolute; left: 5%; top: 10%; width: 40%; height: 65%; background: rgba(0,0,0,0.8); border: 2px solid #333; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #teleprompter { font-size: 28px; line-height: 1.6; color: #ccc; }
+        .anchor-box { position: absolute; right: 0; bottom: 0; width: 50%; height: 100%; pointer-events: none; z-index: 10; }
         video { width: 100%; height: 100%; object-fit: contain; }
+        .bottom-ticker { position: absolute; bottom: 0; width: 100%; height: 80px; background: linear-gradient(to right, #ff0000, #990000); display: flex; align-items: center; z-index: 20; border-top: 3px solid #fff; }
+        marquee { font-size: 35px; font-weight: bold; width: 100%; }
     </style>
 </head>
 <body>
 
 <div class="studio">
-    <div class="news-img"><img id="newsImg" src="" style="width:100%; height:100%; object-fit:cover;"></div>
-    <div class="analysis">
-        <h1 id="title" style="color:#00f2ff; font-size: 26px; margin:0;">PTN NEWS</h1>
-        <p id="msg" style="font-size: 22px; color: yellow;">Gemini 2.0 Flash लोड हो रहा है... क्लिक करें।</p>
-    </div>
-    <div class="anchor">
-        <video id="vid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
-    </div>
+    <div class="script-box"><div id="teleprompter">शीट से खबरें लोड हो रही हैं...</div></div>
+    <div class="visual-box"><img id="newsImg" src="https://image.pollinations.ai/prompt/news%20studio?nologo=true"></div>
+    <div class="anchor-box"><video id="vid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video></div>
+    <div class="bottom-ticker"><marquee scrollamount="12" id="flashTicker">PTN NEWS: लोड हो रहा है...</marquee></div>
 </div>
 
 <script>
-    let myApiKey = "";
+    // 🔴 अपनी Google Sheet CSV लिंक यहाँ पेस्ट करें
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo/export?format=csv"; 
 
-    async function runGemini2() {
-        if (!myApiKey) {
-            myApiKey = prompt("अपनी बिल्कुल नई Gemini API Key यहाँ डालें:");
-            if (!myApiKey) return;
-        }
+    let newsData = [];
+    let currentIndex = 0;
 
-        const msgBox = document.getElementById("msg");
-        msgBox.innerText = "Gemini 2.0 से ताज़ा एनालिसिस आ रहा है...";
-
-        // 🟢 सुधार: यहाँ हमने 2.0 Flash का स्टेबल एंडपॉइंट इस्तेमाल किया है
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${myApiKey}`;
-
-        const payload = {
-            contents: [{
-                parts: [{ text: "Aap ek professional news anchor hain. Aaj ki 1 badi trending news ka Headline aur 100 words ka Hindi analysis dein. Output style: Headline: [TEXT] Analysis: [TEXT]" }]
-            }]
-        };
-
+    async function fetchSheetData() {
         try {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
+            const response = await fetch(sheetUrl);
+            const data = await response.text();
+            const rows = data.split('\n').slice(1); // Header छोड़कर बाकी लाइनें
             
-            if (data.error) {
-                // अगर 2.0 उपलब्ध नहीं है, तो यह अपने आप 1.5 पर वापस जाने की कोशिश करेगा
-                throw new Error(data.error.message);
-            }
+            newsData = rows.map(row => {
+                const cols = row.split(',');
+                return { script: cols[0], visualKey: cols[1], shortFlash: cols[2] };
+            }).filter(item => item.script); // खाली लाइनें हटा दें
 
-            const rawText = data.candidates[0].content.parts[0].text;
-            
-            // डेटा को क्लीन करना
-            const headline = rawText.split("Analysis:")[0].replace("Headline:", "").trim();
-            const analysis = rawText.split("Analysis:")[1].trim();
-
-            document.getElementById("title").innerText = "ब्रेकिंग: " + headline;
-            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/news%20broadcast%20visual%20for%20${encodeURIComponent(headline)}?nologo=true`;
-            
-            startVoice(analysis);
-
-        } catch (error) {
-            msgBox.innerHTML = `<span style="color:red;">एरर: ${error.message}</span><br>हो सकता है आपके अकाउंट में 2.0 अभी एक्टिव न हो।`;
-            console.error(error);
-            myApiKey = ""; 
+            startNews();
+        } catch (err) {
+            document.getElementById("teleprompter").innerText = "शीट लोड करने में समस्या: " + err;
         }
     }
 
-    function startVoice(txt) {
-        document.getElementById("msg").innerText = txt;
+    function startNews() {
+        if (newsData.length === 0) return;
+        const data = newsData[currentIndex];
+        
+        document.getElementById("teleprompter").innerText = data.script;
+        document.getElementById("flashTicker").innerText = data.shortFlash;
+        
+        // विज़ुअल अपडेट
+        const img = document.getElementById("newsImg");
+        img.src = `https://image.pollinations.ai/prompt/news%20broadcast%20visual%20for%20${encodeURIComponent(data.visualKey)}?nologo=true`;
+
+        // आवाज़
         window.speechSynthesis.cancel();
-        const speech = new SpeechSynthesisUtterance(txt);
-        speech.lang = 'hi-IN';
-        speech.rate = 0.95;
+        const msg = new SpeechSynthesisUtterance(data.script);
+        msg.lang = 'hi-IN';
+        msg.rate = 0.95;
 
         const v = document.getElementById("vid");
-        speech.onstart = () => v.play();
-        speech.onend = () => {
+        msg.onstart = () => v.play();
+        msg.onend = () => {
             v.pause();
-            setTimeout(runGemini2, 18000); 
+            currentIndex = (currentIndex + 1) % newsData.length;
+            setTimeout(startNews, 3000);
         };
-        window.speechSynthesis.speak(speech);
+        window.speechSynthesis.speak(msg);
     }
 
-    window.onclick = () => runGemini2();
+    window.onclick = () => {
+        if (!newsData.length) fetchSheetData();
+    };
 </script>
 </body>
 </html>
