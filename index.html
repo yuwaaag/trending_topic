@@ -18,13 +18,13 @@
 <div class="studio-bg"></div>
 <div class="display-unit">
     <img id="trendImg" src="">
-    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:20px; font-size:40px; border-top:2px solid var(--accent);">खबर लोड हो रही है...</div>
+    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:20px; font-size:40px; border-top:2px solid var(--accent);">ताज़ा खबर...</div>
 </div>
-<div class="analysis-box" id="analysisText">शुरू करने के लिए स्क्रीन पर एक बार क्लिक करें...</div>
+<div class="analysis-box" id="analysisText">AI न्यूज़ रूम तैयार है। कृपया स्क्रीन पर एक बार क्लिक करें...</div>
 <div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
 
 <script>
-    // 🔴 यहाँ अपनी सही डिटेल्स भरें
+    // 🔴 अपनी डिटेल्स यहाँ भरें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
@@ -47,11 +47,11 @@
         document.getElementById('trendTitle').innerText = topic;
         document.getElementById('analysisText').innerText = "AI विश्लेषण कर रहा है...";
 
+        // सबसे स्टेबल endpoint का उपयोग
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         
-        // प्रॉम्ट को और भी सरल बना दिया है ताकि AI कंफ्यूज न हो
         const payload = {
-            contents: [{ parts: [{ text: `Topic: "${topic}". Act as News Anchor. Write 3 lines in Hindi news style about this topic.` }] }]
+            contents: [{ parts: [{ text: `Topic: "${topic}". Act as a Hindi News Anchor. Write exactly 3 lines in Hindi news style. Do not use any special symbols or pipe characters.` }] }]
         };
 
         try {
@@ -61,9 +61,9 @@
             if (data.candidates && data.candidates[0].content) {
                 let script = data.candidates[0].content.parts[0].text.trim();
                 
-                // स्क्रीन पर टेक्स्ट दिखाना
+                // स्क्रीन अपडेट
                 document.getElementById('analysisText').innerText = script;
-                // टॉपिक के हिसाब से फोटो लोड करना
+                // टॉपिक के आधार पर फोटो लोड करना
                 document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${encodeURIComponent(topic)}`;
                 
                 speak(script);
@@ -71,7 +71,7 @@
                 throw new Error("AI Busy");
             }
         } catch (e) { 
-            document.getElementById('analysisText').innerText = "AI Response Error. Retrying...";
+            document.getElementById('analysisText').innerText = "AI Response Error. Retrying in 3s...";
             setTimeout(processTopic, 3000);
         }
     }
@@ -87,7 +87,7 @@
         msg.onend = () => {
             video.pause();
             currentIdx = (currentIdx + 1) % newsItems.length;
-            setTimeout(processTopic, 5000); // अगली खबर 5 सेकंड बाद
+            setTimeout(processTopic, 5000); 
         };
         window.speechSynthesis.speak(msg);
     }
