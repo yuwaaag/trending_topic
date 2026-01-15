@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Final Solution</title>
+    <title>PTN News - Final Success</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
         .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; }
@@ -32,36 +32,38 @@
 <script type="module">
     import { GoogleGenerativeAI } from "@google/generative-ai";
 
-    let userApiKey = ""; 
+    let userKey = ""; 
 
     window.runPTN = async function() {
-        if (!userApiKey) {
-            userApiKey = prompt("अपनी नई Gemini API Key यहाँ डालें:");
-            if (!userApiKey) return;
+        if (!userKey) {
+            userKey = prompt("अपनी नई Gemini API Key यहाँ डालें:");
+            if (!userKey) return;
         }
 
         const msgBox = document.getElementById("msg");
         msgBox.innerHTML = "AI से ताज़ा खबरें प्राप्त की जा रही हैं...";
 
         try {
-            const genAI = new GoogleGenerativeAI(userApiKey);
+            const genAI = new GoogleGenerativeAI(userKey);
             
-            // 🔴 सुधार: यहाँ 'gemini-1.5-flash-latest' का उपयोग किया गया है
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+            // 🔴 समाधान: मॉडल का पूरा नाम 'models/gemini-1.5-flash' इस्तेमाल करें
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
             const result = await model.generateContent("Give me 1 trending news headline in India. Just the topic name.");
-            const topic = result.response.text().trim();
+            const response = await result.response;
+            const topic = response.text().trim();
             
             document.getElementById("title").innerText = "ब्रेकिंग: " + topic;
             document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/news%20on%20${encodeURIComponent(topic)}?nologo=true`;
 
             const analysisResult = await model.generateContent(`Aap professional news anchor hain. Topic "${topic}" par 100 words ka Hindi analysis karein.`);
-            const finalTxt = analysisResult.response.text();
+            const analysisResponse = await analysisResult.response;
+            const finalTxt = analysisResponse.text();
             
             speakNow(finalTxt);
         } catch (err) {
-            msgBox.innerHTML = "<span style='color:red;'>त्रुटि: " + err.message + "</span>";
-            userApiKey = ""; 
+            msgBox.innerHTML = "<span style='color:red;'>त्रुटि: " + err.message + "</span><br><br>शायद Key एक्टिव नहीं है या मॉडल का नाम गलत है।";
+            userKey = ""; 
         }
     }
 
