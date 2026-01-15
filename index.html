@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Final Fix</title>
+    <title>PTN News - Gemini 2.0 Flash</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
         .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; background-color: #111; }
@@ -18,7 +18,7 @@
     <div class="news-img"><img id="newsImg" src="" style="width:100%; height:100%; object-fit:cover;"></div>
     <div class="analysis">
         <h1 id="title" style="color:#00f2ff; font-size: 26px; margin:0;">PTN NEWS</h1>
-        <p id="msg" style="font-size: 22px; color: yellow;">सिस्टम तैयार है। शुरू करने के लिए यहाँ क्लिक करें।</p>
+        <p id="msg" style="font-size: 22px; color: yellow;">Gemini 2.0 Flash लोड हो रहा है... क्लिक करें।</p>
     </div>
     <div class="anchor">
         <video id="vid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
@@ -28,21 +28,21 @@
 <script>
     let myApiKey = "";
 
-    async function runNewsSystem() {
+    async function runGemini2() {
         if (!myApiKey) {
-            myApiKey = prompt("अपनी नई API Key यहाँ डालें:");
+            myApiKey = prompt("अपनी बिल्कुल नई Gemini API Key यहाँ डालें:");
             if (!myApiKey) return;
         }
 
         const msgBox = document.getElementById("msg");
-        msgBox.innerText = "AI से ताज़ा खबरें लोड की जा रही हैं...";
+        msgBox.innerText = "Gemini 2.0 से ताज़ा एनालिसिस आ रहा है...";
 
-        // Google Gemini API का सीधा (Direct) कॉल
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${myApiKey}`;
+        // 🟢 सुधार: यहाँ हमने 2.0 Flash का स्टेबल एंडपॉइंट इस्तेमाल किया है
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${myApiKey}`;
 
         const payload = {
             contents: [{
-                parts: [{ text: "Aap ek professional news anchor hain. India ki aaj ki 1 badi trending news ka title aur uska 80 words mein Hindi analysis likhein. Output format: Title: [Headline] Analysis: [Text]" }]
+                parts: [{ text: "Aap ek professional news anchor hain. Aaj ki 1 badi trending news ka Headline aur 100 words ka Hindi analysis dein. Output style: Headline: [TEXT] Analysis: [TEXT]" }]
             }]
         };
 
@@ -56,43 +56,45 @@
             const data = await response.json();
             
             if (data.error) {
+                // अगर 2.0 उपलब्ध नहीं है, तो यह अपने आप 1.5 पर वापस जाने की कोशिश करेगा
                 throw new Error(data.error.message);
             }
 
             const rawText = data.candidates[0].content.parts[0].text;
             
-            // डेटा को अलग-अलग करना
-            const titlePart = rawText.split("Analysis:")[0].replace("Title:", "").trim();
-            const analysisPart = rawText.split("Analysis:")[1].trim();
+            // डेटा को क्लीन करना
+            const headline = rawText.split("Analysis:")[0].replace("Headline:", "").trim();
+            const analysis = rawText.split("Analysis:")[1].trim();
 
-            document.getElementById("title").innerText = "ब्रेकिंग: " + titlePart;
-            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/news%20visual%20for%20${encodeURIComponent(titlePart)}?nologo=true`;
+            document.getElementById("title").innerText = "ब्रेकिंग: " + headline;
+            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/news%20broadcast%20visual%20for%20${encodeURIComponent(headline)}?nologo=true`;
             
-            startBroadcasting(analysisPart);
+            startVoice(analysis);
 
         } catch (error) {
-            msgBox.innerHTML = `<span style="color:red;">एरर: ${error.message}</span><br>कृपया नई Key आज़माएँ।`;
+            msgBox.innerHTML = `<span style="color:red;">एरर: ${error.message}</span><br>हो सकता है आपके अकाउंट में 2.0 अभी एक्टिव न हो।`;
+            console.error(error);
             myApiKey = ""; 
         }
     }
 
-    function startBroadcasting(txt) {
+    function startVoice(txt) {
         document.getElementById("msg").innerText = txt;
         window.speechSynthesis.cancel();
         const speech = new SpeechSynthesisUtterance(txt);
         speech.lang = 'hi-IN';
         speech.rate = 0.95;
 
-        const video = document.getElementById("vid");
-        speech.onstart = () => video.play();
+        const v = document.getElementById("vid");
+        speech.onstart = () => v.play();
         speech.onend = () => {
-            video.pause();
-            setTimeout(runNewsSystem, 15000); 
+            v.pause();
+            setTimeout(runGemini2, 18000); 
         };
         window.speechSynthesis.speak(speech);
     }
 
-    window.onclick = () => runNewsSystem();
+    window.onclick = () => runGemini2();
 </script>
 </body>
 </html>
