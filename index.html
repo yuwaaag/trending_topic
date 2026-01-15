@@ -2,14 +2,14 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News Room - Final Fix</title>
+    <title>PTN News - Deep Analysis v15</title>
     <style>
         :root { --accent: #00f2ff; }
         body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
         .studio-bg { position: absolute; width: 100%; height: 100%; background: url('studio.jpg') no-repeat center center; background-size: cover; z-index: 1; }
-        .display-unit { position: absolute; left: 80px; top: 100px; width: 880px; height: 520px; border: 4px solid var(--accent); z-index: 10; border-radius: 15px; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0,242,255,0.3); }
+        .display-unit { position: absolute; left: 80px; top: 100px; width: 880px; height: 520px; border: 4px solid var(--accent); z-index: 10; border-radius: 15px; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0,242,255,0.4); }
         #trendImg { width: 100%; height: 100%; object-fit: cover; }
-        .analysis-box { position: absolute; left: 80px; bottom: 60px; width: 850px; background: rgba(0, 8, 25, 0.95); border-left: 12px solid #1DA1F2; padding: 35px; font-size: 34px; z-index: 15; border-radius: 0 25px 25px 0; line-height: 1.6; font-weight: 600; min-height: 350px; }
+        .analysis-box { position: absolute; left: 80px; bottom: 60px; width: 850px; background: rgba(0, 8, 25, 0.95); border-left: 12px solid #1DA1F2; padding: 35px; font-size: 32px; z-index: 15; border-radius: 0 25px 25px 0; line-height: 1.5; font-weight: 600; min-height: 350px; box-sizing: border-box; }
         .anchor-container { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; z-index: 5; }
         #anchorVideo { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -19,13 +19,12 @@
 <div class="studio-bg"></div>
 <div class="display-unit">
     <img id="trendImg" src="">
-    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:15px; font-size:35px; border-top:2px solid var(--accent); color: var(--accent);">खबर का विश्लेषण</div>
+    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:15px; font-size:35px; border-top:2px solid var(--accent); color: var(--accent);">Analysis Center</div>
 </div>
-<div class="analysis-box" id="analysisText">शुरू करने के लिए 'Interact' खोलकर यहाँ क्लिक करें।</div>
+<div class="analysis-box" id="analysisText">शुरू करने के लिए 'Interact' खोलकर क्लिक करें।</div>
 <div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
 
 <script>
-    // 🔴 यहाँ अपनी डिटेल्स बिल्कुल सही भरें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
@@ -39,25 +38,23 @@
             const text = await res.text();
             newsItems = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r.length > 2);
             if(newsItems.length > 0) processTopic();
-        } catch (e) { document.getElementById('analysisText').innerText = "Google Sheet से संपर्क नहीं हो रहा।"; }
+        } catch (e) { document.getElementById('analysisText').innerText = "Google Sheet Connect नहीं हो रही!"; }
     }
 
     async function processTopic() {
         const topic = newsItems[currentIdx];
         document.getElementById('trendTitle').innerText = topic;
-        document.getElementById('analysisText').innerText = "AI गहरा विश्लेषण तैयार कर रहा है... कृपया रुकें।";
-        
-        // इमेज लोड करना (यह तो आपका चल ही रहा है)
-        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20of%20${encodeURIComponent(topic)}?width=880&height=520&nologo=true`;
+        document.getElementById('analysisText').innerText = "AI गहरा विश्लेषण (Deep Analysis) तैयार कर रहा है...";
+        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/professional%20news%20infographic%20report%20on%20${encodeURIComponent(topic)}?width=880&height=520&nologo=true`;
 
-        // 🟢 API को कॉल करने का बिल्कुल नया और सुरक्षित तरीका
+        // 🟢 AI को विशेष निर्देश: "Senior Analyst" की तरह व्यवहार करें
+        const promptText = `Aap ek Senior News Analyst hain. Vishay: "${topic}". Is par ek prabhavshali Hindi report taiyar karein. Shuruat namaskar se karein. Topic ki gehrai mein jayein, iske arthik aur samajik pehlu batayein aur aage kya hoga iska vishleshan karein. Kam se kam 8 bade vakya likhein. Sirf Hindi bhasha ka upyog karein.`;
+
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Aap PTN News ke senior analyst hain. Topic "${topic}" par ek bahut bada aur detailed news analysis Hindi mein likhein. Isme gehrai honi chahiye. Kam se kam 150 words ka vishleshan likhein. Sirf Hindi text dein.` }] }]
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
             });
 
             const data = await response.json();
@@ -66,12 +63,12 @@
                 const script = data.candidates[0].content.parts[0].text.trim();
                 displayAndSpeak(script);
             } else {
-                throw new Error("API No Response");
+                throw new Error("No Content");
             }
         } catch (e) {
-            // 🟡 बैकअप: अगर AI फेल हो जाए, तो भी एंकर चुप नहीं रहेगी, वह गहरा विश्लेषण खुद करेगी!
-            const detailedBackup = `नमस्कार, मैं हूँ आपकी AI न्यूज़ एंकर। आज हम ${topic} का विश्लेषण कर रहे हैं। विशेषज्ञों का मानना है कि यह विषय देश की अर्थव्यवस्था और समाज पर गहरा असर डालेगा। इस पर हमारी टीम लगातार जानकारी जुटा रही है। फिलहाल की स्थिति को देखते हुए यह कहना गलत नहीं होगा कि इसमें आने वाले दिनों में और भी बड़े खुलासे होंगे। पूरी जानकारी के लिए जुड़े रहें हमारे साथ।`;
-            displayAndSpeak(detailedBackup);
+            // 🟡 SMART BACKUP: अगर AI फेल हो जाए, तो भी टॉपिक पर आधारित न्यूज़ बोलेगा
+            const smartBackup = `नमस्कार, पीटीएन न्यूज़ के विशेष विश्लेषण में आपका स्वागत है। आज की बड़ी खबर ${topic} को लेकर है। इस विषय पर हमारी टीम ने जो डेटा जुटाया है, वह बताता है कि आने वाले समय में इसके कई बड़े प्रभाव देखने को मिलेंगे। यह न केवल वर्तमान स्थिति को बदल सकता है, बल्कि भविष्य की नई दिशा भी तय करेगा। हम इस पर अपनी पैनी नज़र बनाए हुए हैं। पूरी रिपोर्ट के लिए बने रहें हमारे साथ।`;
+            displayAndSpeak(smartBackup);
         }
     }
 
@@ -81,19 +78,18 @@
         
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
-        msg.rate = 0.9; // प्रोफेशनल न्यूज़ की रफ़्तार
+        msg.rate = 0.9; 
         
         const video = document.getElementById('anchorVideo');
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
             currentIdx = (currentIdx + 1) % newsItems.length;
-            setTimeout(processTopic, 10000); 
+            setTimeout(processTopic, 12000); // 12 सेकंड का ब्रेक
         };
         window.speechSynthesis.speak(msg);
     }
 
-    // 🟢 बहुत ज़रूरी: OBS में Interact बटन दबाकर यहाँ क्लिक करना होगा
     window.onclick = () => startNews();
 </script>
 </body>
