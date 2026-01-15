@@ -2,10 +2,10 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Master Fix</title>
+    <title>PTN News - Final Fix</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
-        .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; }
+        .studio { position: relative; width: 100vw; height: 100vh; background: url('studio.jpg') center/cover; background-color: #111; }
         .news-img { position: absolute; left: 5%; top: 10%; width: 40%; height: 40%; border: 3px solid #00f2ff; border-radius: 10px; overflow: hidden; }
         .analysis { position: absolute; left: 5%; bottom: 5%; width: 45%; height: 40%; background: rgba(0,8,20,0.95); border-left: 10px solid red; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .anchor { position: absolute; right: 0; bottom: 0; width: 50%; height: 95%; }
@@ -18,67 +18,81 @@
     <div class="news-img"><img id="newsImg" src="" style="width:100%; height:100%; object-fit:cover;"></div>
     <div class="analysis">
         <h1 id="title" style="color:#00f2ff; font-size: 26px; margin:0;">PTN NEWS</h1>
-        <p id="msg" style="font-size: 22px; color: yellow;">सिस्टम अपडेट हो गया है। शुरू करने के लिए क्लिक करें।</p>
+        <p id="msg" style="font-size: 22px; color: yellow;">सिस्टम तैयार है। शुरू करने के लिए यहाँ क्लिक करें।</p>
     </div>
     <div class="anchor">
         <video id="vid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
     </div>
 </div>
 
-<script type="module">
-    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+<script>
+    let myApiKey = "";
 
-    let myKey = "";
-
-    window.runPTN = async function() {
-        if (!myKey) {
-            myKey = prompt("अपनी ताज़ा Gemini API Key यहाँ पेस्ट करें:");
-            if (!myKey) return;
+    async function runNewsSystem() {
+        if (!myApiKey) {
+            myApiKey = prompt("अपनी नई API Key यहाँ डालें:");
+            if (!myApiKey) return;
         }
 
         const msgBox = document.getElementById("msg");
-        msgBox.innerHTML = "AI से ताज़ा समाचार प्राप्त किए जा रहे हैं...";
+        msgBox.innerText = "AI से ताज़ा खबरें लोड की जा रही हैं...";
+
+        // Google Gemini API का सीधा (Direct) कॉल
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${myApiKey}`;
+
+        const payload = {
+            contents: [{
+                parts: [{ text: "Aap ek professional news anchor hain. India ki aaj ki 1 badi trending news ka title aur uska 80 words mein Hindi analysis likhein. Output format: Title: [Headline] Analysis: [Text]" }]
+            }]
+        };
 
         try {
-            const genAI = new GoogleGenerativeAI(myKey);
-            
-            // सुधार: यहाँ हम 'gemini-1.5-flash' का सबसे स्टेबल वर्ज़न यूज़ कर रहे हैं
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
 
-            // स्टेप 1: खबर प्राप्त करना
-            const result = await model.generateContent("Give me 1 trending news headline in India. Just the topic name.");
-            const response = await result.response;
-            const topic = response.text().trim();
+            const data = await response.json();
             
-            document.getElementById("title").innerText = "ब्रेकिंग: " + topic;
-            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20for%20${encodeURIComponent(topic)}?nologo=true`;
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
 
-            // स्टेप 2: न्यूज़ विश्लेषण
-            const analysis = await model.generateContent(`Aap ek professional news anchor hain. Topic "${topic}" par 80 words ka Hindi analysis likhein.`);
-            const finalTxt = analysis.response.text();
+            const rawText = data.candidates[0].content.parts[0].text;
             
-            startBroadcasting(finalTxt);
-        } catch (err) {
-            // एरर होने पर हम 'v1' एंडपॉइंट पर स्विच करने की कोशिश करेंगे
-            msgBox.innerHTML = "<span style='color:red;'>कनेक्शन एरर! कृपया अपनी Key चेक करें।</span>";
-            console.error(err);
-            myKey = ""; 
+            // डेटा को अलग-अलग करना
+            const titlePart = rawText.split("Analysis:")[0].replace("Title:", "").trim();
+            const analysisPart = rawText.split("Analysis:")[1].trim();
+
+            document.getElementById("title").innerText = "ब्रेकिंग: " + titlePart;
+            document.getElementById("newsImg").src = `https://image.pollinations.ai/prompt/news%20visual%20for%20${encodeURIComponent(titlePart)}?nologo=true`;
+            
+            startBroadcasting(analysisPart);
+
+        } catch (error) {
+            msgBox.innerHTML = `<span style="color:red;">एरर: ${error.message}</span><br>कृपया नई Key आज़माएँ।`;
+            myApiKey = ""; 
         }
     }
 
     function startBroadcasting(txt) {
         document.getElementById("msg").innerText = txt;
         window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(txt);
-        msg.lang = 'hi-IN';
-        msg.rate = 0.95;
-        const v = document.getElementById("vid");
-        msg.onstart = () => v.play();
-        msg.onend = () => { v.pause(); setTimeout(window.runPTN, 20000); };
-        window.speechSynthesis.speak(msg);
+        const speech = new SpeechSynthesisUtterance(txt);
+        speech.lang = 'hi-IN';
+        speech.rate = 0.95;
+
+        const video = document.getElementById("vid");
+        speech.onstart = () => video.play();
+        speech.onend = () => {
+            video.pause();
+            setTimeout(runNewsSystem, 15000); 
+        };
+        window.speechSynthesis.speak(speech);
     }
 
-    window.addEventListener('click', () => window.runPTN(), { once: true });
+    window.onclick = () => runNewsSystem();
 </script>
 </body>
 </html>
