@@ -2,18 +2,16 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Gemini 2.0 Flash</title>
+    <title>PTN News - Deep Analysis Version</title>
     <style>
         :root { --accent: #00f2ff; }
-        body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Segoe UI', Roboto, sans-serif; color: white; }
+        body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
         .studio-bg { position: absolute; width: 100%; height: 100%; background: url('studio.jpg') no-repeat center center; background-size: cover; z-index: 1; }
-        
-        /* Display Box for AI Image */
         .display-unit { position: absolute; left: 80px; top: 100px; width: 880px; height: 520px; border: 4px solid var(--accent); z-index: 10; border-radius: 15px; overflow: hidden; background: #111; box-shadow: 0 0 40px rgba(0,242,255,0.3); }
         #trendImg { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Analysis Box - For Detailed News */
-        .analysis-box { position: absolute; left: 80px; bottom: 60px; width: 850px; background: rgba(0, 8, 25, 0.95); border-left: 12px solid #1DA1F2; padding: 35px; font-size: 34px; z-index: 15; border-radius: 0 25px 25px 0; line-height: 1.6; font-weight: 600; min-height: 350px; box-sizing: border-box; }
+        /* Analysis Box: Screen पर केवल मुख्य बिंदु दिखेंगे */
+        .analysis-box { position: absolute; left: 80px; bottom: 60px; width: 850px; background: rgba(0, 8, 25, 0.95); border-left: 12px solid #1DA1F2; padding: 35px; font-size: 32px; z-index: 15; border-radius: 0 25px 25px 0; line-height: 1.5; font-weight: 600; min-height: 300px; box-sizing: border-box; }
         
         .anchor-container { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; z-index: 5; }
         #anchorVideo { width: 100%; height: 100%; object-fit: contain; }
@@ -22,20 +20,18 @@
 <body>
 
 <div class="studio-bg"></div>
-
 <div class="display-unit">
     <img id="trendImg" src="">
-    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:15px; font-size:35px; border-top:2px solid var(--accent); color: var(--accent);">Breaking News</div>
+    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:15px; font-size:35px; border-top:2px solid var(--accent); color: var(--accent);">विशेष विश्लेषण</div>
 </div>
 
-<div class="analysis-box" id="analysisText">सिस्टम लोड हो रहा है... कृपया 'Interact' पर क्लिक करें।</div>
+<div class="analysis-box" id="analysisText">PTN न्यूज़ रूम तैयार है... कृपया क्लिक करें।</div>
 
 <div class="anchor-container">
     <video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video>
 </div>
 
 <script>
-    // 🔴 अपनी सही डिटेल्स यहाँ भरें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
@@ -49,23 +45,29 @@
             const text = await res.text();
             newsItems = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r.length > 2);
             if(newsItems.length > 0) processTopic();
-            else document.getElementById('analysisText').innerText = "Sheet खाली है!";
-        } catch (e) { document.getElementById('analysisText').innerText = "Sheet Connection Error!"; }
+        } catch (e) { console.log("Sheet Error"); }
     }
 
     async function processTopic() {
         const topic = newsItems[currentIdx];
         document.getElementById('trendTitle').innerText = topic;
-        document.getElementById('analysisText').innerText = "AI गहराई से विश्लेषण कर रहा है...";
-        
-        // Image Loading
-        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20of%20${encodeURIComponent(topic)}?width=880&height=520&nologo=true`;
+        document.getElementById('analysisText').innerText = "AI इस विषय का गहरा विश्लेषण (Deep Analysis) तैयार कर रहा है...";
+        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/news%20infographic%20of%20${encodeURIComponent(topic)}?width=880&height=520&nologo=true`;
 
-        // 🟢 GOOGLE GEMINI 2.0 FLASH (LATEST MODEL)
+        // लेटेस्ट Gemini 2.0 Flash का इस्तेमाल
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
         
         const payload = {
-            contents: [{ parts: [{ text: `Aap ek TV news anchor hain. Topic "${topic}" par ek vistrit (detailed) news report Hindi mein likhein. Isme kam se kam 6-7 bade vakya (sentences) honi chahiye. Shuruat 'Namaskar, PTN News mein aapka swagat hai' se karein aur topic ki poori jankari dein. Sirf Hindi text dein.` }] }]
+            contents: [{ parts: [{ text: `Act as a Senior News Analyst. Topic: "${topic}". 
+            Task: Write a detailed Hindi news analysis. 
+            Structure: 
+            1. Start with 'Namaskar, PTN News ke vishesh vishleshan mein aapka swagat hai'.
+            2. Explain what is happening currently.
+            3. Explain why this is important for the audience.
+            4. Provide 2-3 deep insights or facts related to it.
+            5. Conclusion: What to expect in future.
+            Length: At least 150-200 words. 
+            Note: Use professional Hindi (no English words). Provide ONLY the Hindi text.` }] }]
         };
 
         try {
@@ -73,31 +75,33 @@
             const data = await response.json();
             
             if (data.candidates && data.candidates[0].content) {
-                const script = data.candidates[0].content.parts[0].text.trim();
-                displayAndSpeak(script);
-            } else {
-                throw new Error("API Issue");
+                const fullScript = data.candidates[0].content.parts[0].text.trim();
+                
+                // स्क्रीन पर केवल पहली 3-4 लाइनें दिखाएंगे ताकि गंदा न लगे, लेकिन एंकर पूरा पढ़ेगा
+                const shortText = fullScript.split('।').slice(0, 3).join('।') + '...';
+                document.getElementById('analysisText').innerText = shortText;
+                
+                speak(fullScript); 
             }
         } catch (e) {
-            // Backup detailed script if API fails
-            const backup = `नमस्कार, पीटीएन न्यूज़ में आपका स्वागत है। आज की बड़ी खबर ${topic} को लेकर है। इस मामले में विशेषज्ञों का कहना है कि इसके दूरगामी परिणाम होंगे। हम इस खबर की तह तक जाने की कोशिश कर रहे हैं। पूरी जानकारी के लिए हमारे साथ जुड़े रहें।`;
-            displayAndSpeak(backup);
+            console.log("API Error");
+            setTimeout(processTopic, 5000);
         }
     }
 
-    function displayAndSpeak(txt) {
-        document.getElementById('analysisText').innerText = txt;
+    function speak(txt) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
-        msg.rate = 0.92; // Slightly slow for better clarity
+        msg.rate = 0.88; // न्यूज़ विश्लेषण के लिए थोड़ी गंभीर और धीमी रफ़्तार
+        msg.pitch = 1.0;
         
         const video = document.getElementById('anchorVideo');
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
             currentIdx = (currentIdx + 1) % newsItems.length;
-            setTimeout(processTopic, 10000); // 10 seconds gap between news
+            setTimeout(processTopic, 12000); // विश्लेषण के बाद 12 सेकंड का ब्रेक
         };
         window.speechSynthesis.speak(msg);
     }
