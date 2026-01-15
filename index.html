@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Pure AI Analysis</title>
+    <title>PTN News - Deep Analysis Center</title>
     <style>
         :root { --accent: #00f2ff; }
         body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
@@ -19,7 +19,7 @@
 <div class="studio-bg"></div>
 <div class="display-unit">
     <img id="trendImg" src="">
-    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:15px; font-size:35px; border-top:2px solid var(--accent); color: var(--accent);">Deep Analysis Center</div>
+    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:15px; font-size:35px; border-top:2px solid var(--accent); color: var(--accent);">Breaking News Analysis</div>
 </div>
 <div class="analysis-box" id="analysisText">सिस्टम तैयार है... कृपया 'Interact' पर क्लिक करें।</div>
 <div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
@@ -28,72 +28,81 @@
     // 🔴 यहाँ अपनी NEW API Key और Sheet ID डालें
     const API_KEY = "AIzaSyBO367SRvqQddL-ZRhpXZ38N_GkYZk6PnU"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
-    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 
     let newsItems = [];
     let currentIdx = 0;
 
-    async function startApp() {
+    async function startNews() {
         try {
-            const res = await fetch(CSV_URL + '&cb=' + Date.now());
+            // गूगल शीट से डेटा लेने का सबसे सुरक्षित रास्ता
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+            const res = await fetch(url);
             const text = await res.text();
-            newsItems = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r.length > 2);
-            if(newsItems.length > 0) processTopic();
-        } catch (e) { document.getElementById('analysisText').innerText = "Sheet Error!"; }
+            
+            // डेटा को सफाई से निकालना
+            newsItems = text.split('\n')
+                           .map(row => row.split(',')[0].replace(/"/g, "").trim())
+                           .filter(item => item.length > 2 && item !== "Topic");
+
+            if(newsItems.length > 0) {
+                processTopic();
+            } else {
+                document.getElementById('analysisText').innerText = "शीट में कोई खबर नहीं मिली!";
+            }
+        } catch (e) {
+            document.getElementById('analysisText').innerText = "Sheet Connection Failed! चेक करें कि शीट Public है या नहीं।";
+        }
     }
 
     async function processTopic() {
         const topic = newsItems[currentIdx];
         document.getElementById('trendTitle').innerText = topic;
-        document.getElementById('analysisText').innerText = "AI गहराई से डेटा विश्लेषण कर रहा है...";
-        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/professional%20news%20graphics%20report%20on%20${encodeURIComponent(topic)}?width=880&height=520&nologo=true`;
+        document.getElementById('analysisText').innerText = "AI गहरा न्यूज़ विश्लेषण तैयार कर रहा है...";
+        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/high%20quality%20news%20visual%20for%20${encodeURIComponent(topic)}?width=880&height=520&nologo=true`;
 
-        // 🟢 AI को निर्देश: सिर्फ गहरी न्यूज़ एनालिसिस ही लिखनी है
-        const promptText = `Write a deep news analysis on "${topic}" in Hindi. Start with 'Namaskar'. Explain reasons, current facts, and future impact in 8-10 long sentences. No English. No prefix.`;
-
-        // 🔵 FIX: v1beta की जगह v1 का इस्तेमाल और Model Name में बदलाव
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
+        // 🟢 DEEP ANALYSIS PROMPT (v1 Model)
+        const aiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        
         try {
-            const response = await fetch(url, {
+            const response = await fetch(aiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `Aap PTN News analyst hain. Topic "${topic}" par 150-200 words ka gehra news analysis Hindi mein likhein. Isme is vishay ke kaaran, prabhav aur bhavishya ki baat karein. Shuruat namaskar se karein. Sirf Hindi text dein.` }] }]
+                })
             });
 
             const data = await response.json();
-            
-            if (data.candidates && data.candidates[0].content) {
+            if (data.candidates) {
                 const script = data.candidates[0].content.parts[0].text.trim();
                 displayAndSpeak(script);
             } else {
-                throw new Error("Empty Response");
+                throw new Error("API Error");
             }
         } catch (e) {
-            console.error(e);
-            document.getElementById('analysisText').innerText = "सर्वर से डेटा नहीं मिल पा रहा। कृपया API Key या इंटरनेट चेक करें।";
-            // अगर फेल हुआ तो 5 सेकंड बाद फिर कोशिश करेगा (चुप रहेगा, फालतू नहीं बोलेगा)
-            setTimeout(processTopic, 5000);
+            document.getElementById('analysisText').innerText = "AI विश्लेषण लोड नहीं हो सका। कृपया API Key चेक करें।";
         }
     }
 
     function displayAndSpeak(txt) {
         document.getElementById('analysisText').innerText = txt;
         window.speechSynthesis.cancel();
+        
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
         msg.rate = 0.9; 
+        
         const video = document.getElementById('anchorVideo');
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
             currentIdx = (currentIdx + 1) % newsItems.length;
-            setTimeout(processTopic, 10000); 
+            setTimeout(processTopic, 12000); // 12 सेकंड का ब्रेक
         };
         window.speechSynthesis.speak(msg);
     }
 
-    window.onclick = () => startApp();
+    window.onclick = () => startNews();
 </script>
 </body>
 </html>
