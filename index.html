@@ -2,30 +2,27 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Gemini 3 Flash Auto</title>
+    <title>PTN News - Gemini 3 Preview</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        .studio { position: relative; width: 1920px; height: 1080px; background: #050505; }
-        .display-unit { position: absolute; left: 80px; top: 120px; width: 850px; height: 480px; border: 4px solid #00f2ff; border-radius: 15px; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0,242,255,0.4); }
-        #trendImg { width: 100%; height: 100%; object-fit: cover; }
-        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 850px; background: rgba(0,8,25,0.95); border-left: 15px solid #00f2ff; padding: 35px; font-size: 32px; z-index: 15; border-radius: 0 25px 25px 0; line-height: 1.5; min-height: 400px; box-sizing: border-box; }
-        h1 { color: #00f2ff; font-size: 38px; margin: 0 0 15px 0; }
-        .anchor-zone { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; z-index: 5; }
+        .studio { position: relative; width: 1920px; height: 1080px; }
+        .news-screen { position: absolute; left: 80px; top: 120px; width: 850px; height: 480px; border: 4px solid #00f2ff; border-radius: 15px; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0,242,255,0.4); }
+        #newsImg { width: 100%; height: 100%; object-fit: cover; }
+        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 820px; background: rgba(0,8,25,0.95); border-left: 15px solid #00f2ff; padding: 35px; border-radius: 0 20px 20px 0; min-height: 400px; }
+        h1 { color: #00f2ff; font-size: 38px; margin: 0; }
+        p { font-size: 32px; line-height: 1.5; margin-top: 15px; }
+        .anchor-zone { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; }
         video { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
 
 <div class="studio">
-    <div class="display-unit">
-        <img id="trendImg" src="">
-    </div>
-
+    <div class="news-screen"><img id="newsImg" src=""></div>
     <div class="analysis-box">
-        <h1 id="headline">सिस्टम कनेक्ट हो रहा है...</h1>
-        <p id="content">Gemini 3 Flash Preview मॉडल से ताज़ा खबरें खोजी जा रही हैं। <br><br> <span style="color:yellow;">शुरू करने के लिए एक बार क्लिक करें।</span></p>
+        <h1 id="headline">सिस्टम तैयार है...</h1>
+        <p id="content" style="color: yellow;">शुरू करने के लिए स्क्रीन पर कहीं भी 'क्लिक' करें।</p>
     </div>
-
     <div class="anchor-zone">
         <video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
     </div>
@@ -35,61 +32,71 @@
     // 🔴 यहाँ अपनी बिल्कुल नई API Key डालें
     const API_KEY = "AIzaSyB0rTzlgnkcJn02amykEQ_edXkEs1qtm14"; 
 
-    async function fetchAutoNews() {
+    async function fetchNews() {
         const headline = document.getElementById('headline');
         const content = document.getElementById('content');
         
-        // 🟢 मॉडल का नाम वही जो आपने बताया: gemini-3-flash-preview
-        const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
+        // 🟢 Gemini-3-flash-preview मॉडल का सही बीटा यूआरएल
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
 
         try {
-            // 1. ट्रेंडिंग टॉपिक ढूँढना
-            const topicRes = await fetch(aiUrl, {
+            // 1. ट्रेंडिंग खबर ढूंढना
+            const resTopic = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: "Give me 1 major trending news topic in India for today. Just the name." }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: "Tell me 1 current major trending news headline in India for today. Just the name." }] }] })
             });
-            const topicData = await topicRes.json();
-            const topic = topicData.candidates[0].content.parts[0].text.trim();
+            const dataTopic = await resTopic.json();
+            const topic = dataTopic.candidates[0].content.parts[0].text.trim();
             
             headline.innerText = "BREAKING: " + topic;
-            document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20for%20${encodeURIComponent(topic)}?width=850&height=480&nologo=true`;
+            document.getElementById('newsImg').src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20for%20${encodeURIComponent(topic)}?nologo=true`;
 
             // 2. गहरा विश्लेषण (Deep Analysis)
-            const analysisPrompt = `Aap ek senior news analyst hain. Topic "${topic}" par 150-200 words ka gehra news analysis Hindi mein likhein. Namaskar se shuru karein. Sirf Hindi text.`;
-
-            const analysisRes = await fetch(aiUrl, {
+            const resAnalysis = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: analysisPrompt }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: `Aap news analyst hain. Topic "${topic}" par 120 words ka gehra news analysis Hindi mein likhein. Shuruat Namaskar se karein.` }] }] })
             });
-            const analysisData = await analysisRes.json();
-            const script = analysisData.candidates[0].content.parts[0].text.trim();
-
+            const dataAnalysis = await resAnalysis.json();
+            const script = dataAnalysis.candidates[0].content.parts[0].text;
+            
             speak(script);
 
         } catch (e) {
-            content.innerHTML = "<span style='color:red;'>मॉडल कनेक्शन एरर!</span><br>कृपया चेक करें कि आपकी API Key इस नए मॉडल (Gemini 3 Flash) के लिए सक्रिय है या नहीं।";
-            console.error(e);
+            content.innerText = "API Error: कृपया अपनी Key चेक करें।";
         }
     }
 
     function speak(txt) {
         document.getElementById('content').innerText = txt;
         window.speechSynthesis.cancel();
+        
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
         msg.rate = 0.9;
-        const v = document.getElementById('anchorVid');
-        msg.onstart = () => v.play();
+
+        // पक्का करें कि हिंदी आवाज़ ही उपयोग हो
+        const voices = window.speechSynthesis.getVoices();
+        const hindiVoice = voices.find(v => v.lang.includes('hi'));
+        if (hindiVoice) msg.voice = hindiVoice;
+
+        const video = document.getElementById('anchorVid');
+        msg.onstart = () => video.play();
         msg.onend = () => {
-            v.pause();
-            setTimeout(fetchAutoNews, 30000); // 30 सेकंड बाद अगली ताज़ा खबर
+            video.pause();
+            setTimeout(fetchNews, 20000); // 20 सेकंड बाद अगली ताज़ा खबर
         };
+        
         window.speechSynthesis.speak(msg);
     }
 
-    window.onclick = () => fetchAutoNews();
+    // ब्राउज़र पाबंदी हटाने के लिए क्लिक फंक्शन
+    window.onclick = () => {
+        // आवाज़ को 'अनलॉक' करने के लिए एक खाली मैसेज चलाएं
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+        fetchNews();
+    };
 </script>
 </body>
 </html>
