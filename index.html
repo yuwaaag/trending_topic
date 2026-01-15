@@ -2,15 +2,13 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Full Auto Pilot</title>
+    <title>PTN News - No API Direct News</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         .studio { position: relative; width: 1920px; height: 1080px; }
-        .news-display { position: absolute; left: 80px; top: 120px; width: 850px; height: 480px; border: 4px solid #00f2ff; border-radius: 15px; overflow: hidden; box-shadow: 0 0 30px rgba(0,242,255,0.4); }
-        #newsImg { width: 100%; height: 100%; object-fit: cover; transition: 2s; }
-        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 820px; background: rgba(0,8,25,0.95); border-left: 15px solid #ff0000; padding: 35px; border-radius: 0 20px 20px 0; min-height: 350px; }
-        h1 { color: #00f2ff; font-size: 35px; margin: 0 0 10px 0; font-weight: bold; }
-        p { font-size: 32px; line-height: 1.5; margin: 0; }
+        .news-box { position: absolute; left: 80px; bottom: 80px; width: 850px; background: rgba(0,0,0,0.9); border-left: 15px solid #ff0000; padding: 40px; border-radius: 0 20px 20px 0; min-height: 400px; }
+        h1 { color: #00f2ff; font-size: 45px; margin-bottom: 20px; }
+        p { font-size: 35px; line-height: 1.6; }
         .anchor-zone { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; }
         video { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -18,57 +16,45 @@
 <body>
 
 <div class="studio">
-    <div class="news-display"><img id="newsImg" src=""></div>
-    <div class="analysis-box">
-        <h1 id="headline">खोज जारी है...</h1>
-        <p id="content">इंटरनेट से ट्रेंडिंग खबरें निकाली जा रही हैं। कृपया प्रतीक्षा करें...</p>
+    <div class="news-box">
+        <h1 id="title">PTN LIVE NEWS</h1>
+        <p id="content">इंटरनेट से ताज़ा खबरें जोड़ी जा रही हैं... <br><br> <b>कृपया यहाँ एक बार क्लिक करें।</b></p>
     </div>
-    <div class="anchor-zone"><video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video></div>
+    <div class="anchor-zone">
+        <video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
+    </div>
 </div>
 
 <script>
-    // 🔴 यहाँ अपनी बिल्कुल नई API Key डालें
-    const API_KEY = "AIzaSyDx9F-atjd__NNWR8-TKGrWaY19CT7i5cg"; 
+    // बिना API के Google News से खबरें उठाने वाला लिंक
+    const RSS_URL = `https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss/headlines/section/topic/NATION?hl=hi&gl=IN&ceid=IN:hi`;
 
-    async function fetchAutoTrendingNews() {
-        const headline = document.getElementById('headline');
-        const content = document.getElementById('content');
+    async function getLiveNews() {
+        const titleText = document.getElementById('title');
+        const contentText = document.getElementById('content');
         
-        // Step 1: AI से ही पूछना कि आज का ट्रेंडिंग टॉपिक क्या है
-        const findTopicPrompt = "Tell me one major trending news topic in India for today. Just the topic name in 5 words.";
-        const aiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
         try {
-            const topicRes = await fetch(aiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: findTopicPrompt }] }] })
-            });
-            const topicData = await topicRes.json();
-            const topic = topicData.candidates[0].content.parts[0].text.trim();
+            const response = await fetch(RSS_URL);
+            const data = await response.json();
             
-            headline.innerText = "BREAKING: " + topic;
-            document.getElementById('newsImg').src = `https://image.pollinations.ai/prompt/high%20quality%20news%20visual%20for%20${encodeURIComponent(topic)}?width=850&height=480&nologo=true`;
-
-            // Step 2: अब उस टॉपिक पर गहरा विश्लेषण (Deep Analysis) माँगना
-            const analysisPrompt = `Write a deep news analysis on "${topic}" in professional Hindi. At least 150 words. Focus on reasons and impact. Start with 'Namaskar'. No English.`;
-
-            const analysisRes = await fetch(aiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: analysisPrompt }] }] })
-            });
-            const analysisData = await analysisRes.json();
-            const finalScript = analysisData.candidates[0].content.parts[0].text.trim();
-
-            speakNews(finalScript);
-
+            if (data.items && data.items.length > 0) {
+                // ताज़ा पहली खबर उठाना
+                const latestNews = data.items[0];
+                const newsHeadline = latestNews.title;
+                
+                titleText.innerText = "बड़ी खबर: " + newsHeadline.split('-')[0];
+                
+                // एंकर के लिए स्क्रिप्ट तैयार करना (बिना API के)
+                const script = `नमस्कार, पीटीएन न्यूज़ में आपका स्वागत है। इस वक्त की बड़ी खबर आ रही है। हेडलाइन है: ${newsHeadline}। इस मामले पर विस्तार से जानकारी अभी आनी बाकी है, लेकिन शुरुआती रिपोर्ट के अनुसार यह आज की सबसे बड़ी चर्चा का विषय बना हुआ है। देश और दुनिया की बाकी खबरों के लिए बने रहें हमारे साथ।`;
+                
+                speak(script);
+            }
         } catch (e) {
-            content.innerText = "सर्वर कनेक्शन एरर! कृपया अपनी API Key चेक करें।";
+            contentText.innerText = "इंटरनेट कनेक्शन चेक करें, खबरें लोड नहीं हो सकीं।";
         }
     }
 
-    function speakNews(txt) {
+    function speak(txt) {
         document.getElementById('content').innerText = txt;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(txt);
@@ -79,14 +65,13 @@
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
-            // 20 सेकंड के ब्रेक के बाद अगली ताज़ा खबर खुद खोजेगा
-            setTimeout(fetchAutoTrendingNews, 20000); 
+            // 20 सेकंड बाद अगली ताज़ा खबर के लिए रिफ्रेश
+            setTimeout(getLiveNews, 20000);
         };
         window.speechSynthesis.speak(msg);
     }
 
-    // स्क्रीन पर कहीं भी क्लिक करते ही ऑटो-सिस्टम शुरू हो जाएगा
-    window.onclick = () => fetchAutoTrendingNews();
+    window.onclick = () => getLiveNews();
 </script>
 </body>
 </html>
