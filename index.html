@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root { --accent: #00f2ff; --twitter-blue: #1DA1F2; }
+        body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Oswald', sans-serif; }
+
+        /* Backgrounds */
+        .studio-bg { position: absolute; width: 100%; height: 100%; background: url('studio.jpg') no-repeat center center; background-size: cover; z-index: 1; }
+        
+        /* Layout Elements */
+        .anchor-container { position: absolute; right: 0; bottom: 0; width: 950px; height: 1000px; z-index: 5; }
+        #anchorVideo { width: 100%; height: 100%; object-fit: contain; }
+
+        .display-unit {
+            position: absolute; left: 80px; top: 120px; width: 850px; height: 500px;
+            border: 5px solid var(--accent); border-radius: 20px; overflow: hidden; z-index: 10;
+            background: #000; box-shadow: 0 0 40px rgba(0,242,255,0.4);
+        }
+        #trendImg { width: 100%; height: 100%; object-fit: cover; }
+
+        .analysis-box {
+            position: absolute; left: 80px; bottom: 80px; width: 800px;
+            background: rgba(0, 5, 15, 0.9); border-left: 10px solid var(--twitter-blue);
+            padding: 30px; color: white; font-size: 35px; z-index: 15; line-height: 1.4; border-radius: 0 30px 30px 0;
+        }
+
+        .hashtag-tag {
+            position: absolute; top: 40px; left: 80px; background: var(--twitter-blue);
+            color: white; padding: 10px 25px; border-radius: 50px; font-weight: bold; font-size: 28px; z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+<div class="studio-bg"></div>
+
+<div class="hashtag-tag">
+    <span id="hashText">#TRENDING</span>
+</div>
+
+<div class="display-unit">
+    <img id="trendImg" src="" alt="News Image">
+    <div style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.8); padding:15px; color:white; font-size:35px;" id="trendTitle">
+        न्यूज़ लोड हो रही है...
+    </div>
+</div>
+
+<div class="analysis-box" id="analysisText">
+    Gemini AI आपकी शीट से टॉपिक पढ़ रहा है...
+</div>
+
+<div class="anchor-container">
+    <video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video>
+</div>
+
+<script>
+    const GEMINI_API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
+    const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+    let newsTopics = [];
+    let currentIndex = 0;
+
+    async function fetchSheetData() {
+        try {
+            const res = await fetch(CSV_URL + '&cb=' + Date.now());
+            const text = await res.text();
+            newsTopics = text.split('\n').slice(1).map(row => row.trim()).filter(row => row !== "");
+            
+            processWithAI();
+        } catch (e) { console.log("Sheet Error", e); }
+    }
+
+    async function processWithAI() {
+        if (newsTopics.length === 0) return;
+
+        const topic = newsTopics[currentIndex];
+        document.getElementById('trendTitle').innerText = topic;
+        document.getElementById('analysisText').innerText = "AI विश्लेषण तैयार कर रहा है...";
+
+        const prompt = `Topic: "${topic}". 
+        Act as a professional News Anchor. Write 3-4 powerful lines in Hindi. 
+        Also provide 1 image search keyword and 1 trending hashtag.
+        Format: Keyword|Hashtag|Script`;
+
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({contents: [{parts: [{text: prompt}]}]})
+            });
+
+            const result = await res.json();
+            const [kw, hash, script] = result.candidates[0].content.parts[0].text.split('|');
+
+            updateUI(kw.trim(), hash.trim(), script.trim());
+        } catch (e) { console.log("AI Error", e); }
+    }
+
+    function updateUI(kw, hash, script) {
+        document.getElementById('hashText').innerText = hash;
+        document.getElementById('analysisText').innerText = script;
+        document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${kw}`;
+        
+        speak(script);
+    }
+
+    function speak(txt) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(txt);
+        msg.lang = 'hi-IN';
+        const video = document.getElementById('anchorVideo');
+        msg.onstart = () => video.play();
+        msg.onend = () => {
+            video.pause();
+            currentIndex = (currentIndex + 1) % newsTopics.length;
+            setTimeout(processWithAI, 5000); 
+        };
+        window.speechSynthesis.speak(msg);
+    }
+
+    window.onclick = () => fetchSheetData();
+</script>
+</body>
+</html>
