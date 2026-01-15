@@ -2,99 +2,91 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Final Success</title>
+    <title>PTN News - Full Auto Pilot</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         .studio { position: relative; width: 1920px; height: 1080px; }
-        .main-screen { position: absolute; left: 50px; top: 100px; width: 850px; height: 480px; border: 4px solid #00f2ff; border-radius: 15px; overflow: hidden; background: #111; }
-        #newsImg { width: 100%; height: 100%; object-fit: cover; }
-        .news-box { position: absolute; left: 50px; bottom: 80px; width: 800px; background: rgba(0,8,25,0.95); border-left: 15px solid #00f2ff; padding: 30px; border-radius: 0 20px 20px 0; min-height: 380px; box-sizing: border-box; }
-        h1 { color: #00f2ff; font-size: 40px; margin: 0 0 15px 0; }
-        p { font-size: 32px; line-height: 1.5; font-weight: 500; }
-        .anchor-zone { position: absolute; right: 0; bottom: 0; width: 1000px; height: 1080px; }
+        .news-display { position: absolute; left: 80px; top: 120px; width: 850px; height: 480px; border: 4px solid #00f2ff; border-radius: 15px; overflow: hidden; box-shadow: 0 0 30px rgba(0,242,255,0.4); }
+        #newsImg { width: 100%; height: 100%; object-fit: cover; transition: 2s; }
+        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 820px; background: rgba(0,8,25,0.95); border-left: 15px solid #ff0000; padding: 35px; border-radius: 0 20px 20px 0; min-height: 350px; }
+        h1 { color: #00f2ff; font-size: 35px; margin: 0 0 10px 0; font-weight: bold; }
+        p { font-size: 32px; line-height: 1.5; margin: 0; }
+        .anchor-zone { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; }
         video { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
 
 <div class="studio">
-    <div class="main-screen">
-        <img id="newsImg" src="https://image.pollinations.ai/prompt/breaking%20news%20india%20digital?nologo=true">
+    <div class="news-display"><img id="newsImg" src=""></div>
+    <div class="analysis-box">
+        <h1 id="headline">खोज जारी है...</h1>
+        <p id="content">इंटरनेट से ट्रेंडिंग खबरें निकाली जा रही हैं। कृपया प्रतीक्षा करें...</p>
     </div>
-
-    <div class="news-box">
-        <h1 id="title">PTN News Analysis</h1>
-        <p id="content">सिस्टम तैयार है। <br><br> <span style="color:yellow;">शुरू करने के लिए माउस से एक बार यहाँ क्लिक करें।</span></p>
-    </div>
-
-    <div class="anchor-zone">
-        <video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
-    </div>
+    <div class="anchor-zone"><video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video></div>
 </div>
 
 <script>
     // 🔴 यहाँ अपनी बिल्कुल नई API Key डालें
     const API_KEY = "AIzaSyDx9F-atjd__NNWR8-TKGrWaY19CT7i5cg"; 
 
-    // ये वो टॉपिक्स हैं जिन पर एंकर अपने आप बोलेगी (बिना शीट के)
-    const autoTopics = [
-        "Ayodhya Ram Mandir economic impact",
-        "India's growing space mission and ISRO",
-        "Upcoming major sports events in India",
-        "Digital India and AI revolution in villages"
-    ];
-    let currentIdx = 0;
-
-    async function runAutoNews() {
-        const topic = autoTopics[currentIdx];
-        document.getElementById('title').innerText = "विशेष विश्लेषण: " + topic;
-        document.getElementById('content').innerText = "AI गहरा डेटा जुटा रहा है, कृपया प्रतीक्षा करें...";
-        document.getElementById('newsImg').src = `https://image.pollinations.ai/prompt/professional%20news%20report%20on%20${encodeURIComponent(topic)}?width=850&height=480&nologo=true`;
-
-        const promptText = `Aap ek senior news analyst hain. Topic "${topic}" par 150 words ka gehra aur vistaar se news analysis Hindi mein likhein. Isme facts aur bhavishya ki baat karein. Shuruat 'Namaskar' se karein. Sirf Hindi text dein.`;
+    async function fetchAutoTrendingNews() {
+        const headline = document.getElementById('headline');
+        const content = document.getElementById('content');
+        
+        // Step 1: AI से ही पूछना कि आज का ट्रेंडिंग टॉपिक क्या है
+        const findTopicPrompt = "Tell me one major trending news topic in India for today. Just the topic name in 5 words.";
+        const aiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
         try {
-            // Updated Stable Endpoint
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-            
-            const response = await fetch(url, {
+            const topicRes = await fetch(aiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: findTopicPrompt }] }] })
             });
-
-            const data = await response.json();
+            const topicData = await topicRes.json();
+            const topic = topicData.candidates[0].content.parts[0].text.trim();
             
-            if (data.candidates && data.candidates[0].content) {
-                const script = data.candidates[0].content.parts[0].text.trim();
-                playNews(script);
-            } else {
-                throw new Error("API Connection Failed");
-            }
+            headline.innerText = "BREAKING: " + topic;
+            document.getElementById('newsImg').src = `https://image.pollinations.ai/prompt/high%20quality%20news%20visual%20for%20${encodeURIComponent(topic)}?width=850&height=480&nologo=true`;
+
+            // Step 2: अब उस टॉपिक पर गहरा विश्लेषण (Deep Analysis) माँगना
+            const analysisPrompt = `Write a deep news analysis on "${topic}" in professional Hindi. At least 150 words. Focus on reasons and impact. Start with 'Namaskar'. No English.`;
+
+            const analysisRes = await fetch(aiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: analysisPrompt }] }] })
+            });
+            const analysisData = await analysisRes.json();
+            const finalScript = analysisData.candidates[0].content.parts[0].text.trim();
+
+            speakNews(finalScript);
+
         } catch (e) {
-            document.getElementById('content').innerHTML = "<span style='color:red;'>कनेक्शन एरर!</span><br>1. नई API Key डालें।<br>2. अपना इंटरनेट चेक करें।";
+            content.innerText = "सर्वर कनेक्शन एरर! कृपया अपनी API Key चेक करें।";
         }
     }
 
-    function playNews(txt) {
+    function speakNews(txt) {
         document.getElementById('content').innerText = txt;
         window.speechSynthesis.cancel();
-        
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
         msg.rate = 0.9;
-        
         const video = document.getElementById('anchorVid');
+        
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
-            currentIdx = (currentIdx + 1) % autoTopics.length;
-            setTimeout(runAutoNews, 10000); // 10 सेकंड बाद अगली खबर
+            // 20 सेकंड के ब्रेक के बाद अगली ताज़ा खबर खुद खोजेगा
+            setTimeout(fetchAutoTrendingNews, 20000); 
         };
         window.speechSynthesis.speak(msg);
     }
 
-    window.onclick = () => runAutoNews();
+    // स्क्रीन पर कहीं भी क्लिक करते ही ऑटो-सिस्टम शुरू हो जाएगा
+    window.onclick = () => fetchAutoTrendingNews();
 </script>
 </body>
 </html>
