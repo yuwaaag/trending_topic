@@ -2,14 +2,20 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>AI News Room - Success Version</title>
+    <title>AI News Studio - Final Working</title>
     <style>
-        :root { --accent: #00f2ff; --twitter: #1DA1F2; }
-        body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
+        :root { --accent: #00f2ff; }
+        body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; color: white; }
         .studio-bg { position: absolute; width: 100%; height: 100%; background: url('studio.jpg') no-repeat center center; background-size: cover; z-index: 1; }
-        .display-unit { position: absolute; left: 80px; top: 120px; width: 850px; height: 500px; border: 5px solid var(--accent); z-index: 10; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 0 50px rgba(0,242,255,0.4); }
-        #trendImg { width: 100%; height: 100%; object-fit: cover; }
-        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 20, 0.95); border-left: 15px solid var(--twitter); padding: 35px; font-size: 40px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.5; min-height: 200px; font-weight: bold; }
+        
+        /* डिस्प्ले यूनिट - जहाँ फोटो दिखेगी */
+        .display-unit { position: absolute; left: 80px; top: 120px; width: 850px; height: 500px; border: 5px solid var(--accent); z-index: 10; border-radius: 20px; overflow: hidden; background: #111; box-shadow: 0 0 50px rgba(0,242,255,0.4); }
+        #trendImg { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        
+        /* न्यूज़ बॉक्स */
+        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 800px; background: rgba(0, 5, 20, 0.95); border-left: 15px solid #1DA1F2; padding: 35px; font-size: 42px; z-index: 15; border-radius: 0 30px 30px 0; line-height: 1.5; font-weight: bold; min-height: 220px; }
+        
+        /* एंकर कंटेनर */
         .anchor-container { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; z-index: 5; }
         #anchorVideo { width: 100%; height: 100%; object-fit: contain; }
     </style>
@@ -17,94 +23,86 @@
 <body>
 
 <div class="studio-bg"></div>
+
 <div class="display-unit">
-    <img id="trendImg" src="">
-    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.85); padding:20px; font-size:40px; border-top:2px solid var(--accent);">खबर लोड हो रही है...</div>
+    <img id="trendImg" src="https://via.placeholder.com/850x500/000/fff?text=Loading+Image...">
+    <div id="trendTitle" style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.8); padding:20px; font-size:40px; border-top:2px solid var(--accent);">जुड़ रहा है...</div>
 </div>
-<div class="analysis-box" id="analysisText">AI न्यूज़ रूम तैयार है। शुरू करने के लिए 'Interact' दबाकर यहाँ क्लिक करें...</div>
-<div class="anchor-container"><video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video></div>
+
+<div class="analysis-box" id="analysisText">शुरू करने के लिए 'Interact' दबाकर स्क्रीन पर क्लिक करें।</div>
+
+<div class="anchor-container">
+    <video id="anchorVideo" muted loop playsinline><source src="anchor_video.mp4" type="video/mp4"></video>
+</div>
 
 <script>
-    // 🔴 यहाँ अपनी डिटेल्स भरें
+    // 🔴 1. अपनी सही डिटेल्स यहाँ भरें
     const API_KEY = "AIzaSyBUGHUmJMdxTvDLTrBtiLTN3jZUQ4dspCo"; 
     const SHEET_ID = '1rybhbksHooXt_n1X9xOhvE8ilVneK1V4wx_NHXVlfIo';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 
-    let newsItems = [];
-    let currentIdx = 0;
+    let topics = [];
+    let idx = 0;
 
-    async function startNews() {
+    async function start() {
         try {
             const res = await fetch(CSV_URL + '&cb=' + Date.now());
             const text = await res.text();
-            newsItems = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r.length > 2);
-            if(newsItems.length > 0) processTopic();
-            else document.getElementById('analysisText').innerText = "Sheet में टॉपिक नहीं मिला!";
-        } catch (e) { document.getElementById('analysisText').innerText = "Sheet Connection Error!"; }
+            topics = text.split('\n').slice(1).map(r => r.split(',')[0].replace(/"/g, "").trim()).filter(r => r.length > 2);
+            if(topics.length > 0) callGemini();
+            else document.getElementById('analysisText').innerText = "Sheet खाली है!";
+        } catch (e) { document.getElementById('analysisText').innerText = "Sheet Error!"; }
     }
 
-    async function processTopic() {
-        const topic = newsItems[currentIdx];
+    async function callGemini() {
+        const topic = topics[idx];
         document.getElementById('trendTitle').innerText = topic;
-        document.getElementById('analysisText').innerText = "AI विश्लेषण कर रहा है...";
-        document.getElementById('trendImg').src = `https://source.unsplash.com/1600x900/?${encodeURIComponent(topic)}`;
+        document.getElementById('analysisText').innerText = "AI विश्लेषण तैयार कर रहा है...";
+        
+        // 🟢 नया इमेज सोर्स (यह कभी फेल नहीं होगा)
+        document.getElementById('trendImg').src = `https://image.pollinations.ai/prompt/news%20report%20on%20${encodeURIComponent(topic)}?width=850&height=500&nologo=true`;
 
-        // 🟢 इस बार हम मॉडल का वो नाम इस्तेमाल कर रहे हैं जो कभी फेल नहीं होता
+        // 🟢 API URL फिक्स (इसमें हमने v1beta और flash को सही तरीके से जोड़ा है)
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         
         const payload = {
-            contents: [{ parts: [{ text: `Write 3 dramatic news lines in Hindi about "${topic}". Speak like a TV news anchor. No hashtags, no English.` }] }]
+            contents: [{ parts: [{ text: `Act as a TV news anchor. Write a powerful 3-line news report in Hindi about "${topic}". Use simple, dramatic Hindi words. Only give the Hindi text.` }] }]
         };
 
         try {
             const response = await fetch(url, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
             const data = await response.json();
             
-            // अगर जवाब मिल गया
             if (data.candidates && data.candidates[0].content) {
                 const script = data.candidates[0].content.parts[0].text.trim();
                 document.getElementById('analysisText').innerText = script;
                 speak(script);
             } else {
-                throw new Error("Model Name Mismatch");
+                throw new Error("Retry");
             }
-        } catch (e) { 
-            console.log("Retrying with alternate model...");
-            retryWithAlternative(topic); // अगर पहला मॉडल फेल हो, तो दूसरा ट्राई करो
+        } catch (e) {
+            document.getElementById('analysisText').innerText = "सर्वर व्यस्त है, 5 सेकंड में पुनः प्रयास...";
+            setTimeout(callGemini, 5000);
         }
     }
 
-    async function retryWithAlternative(topic) {
-        // बैकअप मॉडल: gemini-pro
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
-        try {
-            const response = await fetch(url, { method: 'POST', body: JSON.stringify({contents: [{parts:[{text:`Topic: ${topic}. Write 3 lines news in Hindi.`}]}]}), headers: {'Content-Type': 'application/json'} });
-            const data = await response.json();
-            const script = data.candidates[0].content.parts[0].text.trim();
-            document.getElementById('analysisText').innerText = script;
-            speak(script);
-        } catch (err) {
-            document.getElementById('analysisText').innerText = "इंटरनेट कनेक्शन चेक करें। 10 सेकंड में फिर कोशिश करेंगे...";
-            setTimeout(processTopic, 10000);
-        }
-    }
-
-    function speak(textToSay) {
+    function speak(txt) {
         window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(textToSay);
+        const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
-        msg.rate = 0.9;
+        msg.rate = 0.95;
         const video = document.getElementById('anchorVideo');
+        
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
-            currentIdx = (currentIdx + 1) % newsItems.length;
-            setTimeout(processTopic, 7000); // अगली खबर के लिए 7 सेकंड का ब्रेक
+            idx = (idx + 1) % topics.length;
+            setTimeout(callGemini, 8000); 
         };
         window.speechSynthesis.speak(msg);
     }
 
-    window.onclick = () => startNews();
+    window.onclick = () => start();
 </script>
 </body>
 </html>
