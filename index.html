@@ -2,16 +2,16 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>PTN News - Gemini 3 Preview</title>
+    <title>PTN News - Gemini 2.5 Flash</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         .studio { position: relative; width: 1920px; height: 1080px; }
         .news-screen { position: absolute; left: 80px; top: 120px; width: 850px; height: 480px; border: 4px solid #00f2ff; border-radius: 15px; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0,242,255,0.4); }
         #newsImg { width: 100%; height: 100%; object-fit: cover; }
-        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 820px; background: rgba(0,8,25,0.95); border-left: 15px solid #00f2ff; padding: 35px; border-radius: 0 20px 20px 0; min-height: 400px; }
+        .analysis-box { position: absolute; left: 80px; bottom: 80px; width: 820px; background: rgba(0,8,25,0.95); border-left: 15px solid #ff0000; padding: 35px; border-radius: 0 20px 20px 0; min-height: 400px; }
         h1 { color: #00f2ff; font-size: 38px; margin: 0; }
         p { font-size: 32px; line-height: 1.5; margin-top: 15px; }
-        .anchor-zone { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; }
+        .anchor-area { position: absolute; right: 0; bottom: 0; width: 950px; height: 1080px; }
         video { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
@@ -20,51 +20,59 @@
 <div class="studio">
     <div class="news-screen"><img id="newsImg" src=""></div>
     <div class="analysis-box">
-        <h1 id="headline">सिस्टम तैयार है...</h1>
-        <p id="content" style="color: yellow;">शुरू करने के लिए स्क्रीन पर कहीं भी 'क्लिक' करें।</p>
+        <h1 id="headline">सिस्टम सक्रिय हो रहा है...</h1>
+        <p id="content">Gemini 2.5 Flash मॉडल से ताज़ा खबरें खोजी जा रही हैं।</p>
     </div>
-    <div class="anchor-zone">
+    <div class="anchor-area">
         <video id="anchorVid" muted loop><source src="anchor_video.mp4" type="video/mp4"></video>
     </div>
 </div>
 
 <script>
-    // 🔴 यहाँ अपनी बिल्कुल नई API Key डालें
+    // 🔴 अपनी बिल्कुल नई API Key यहाँ डालें
     const API_KEY = "AIzaSyB0rTzlgnkcJn02amykEQ_edXkEs1qtm14"; 
 
-    async function fetchNews() {
+    async function fetchGemini25News() {
         const headline = document.getElementById('headline');
         const content = document.getElementById('content');
         
-        // 🟢 Gemini-3-flash-preview मॉडल का सही बीटा यूआरएल
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
+        // 🟢 यहाँ 'gemini-2.5-flash' मॉडल का उपयोग किया गया है
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
         try {
-            // 1. ट्रेंडिंग खबर ढूंढना
-            const resTopic = await fetch(url, {
+            // स्टेप 1: आज का मुख्य ट्रेंडिंग टॉपिक ढूँढना
+            const topicRes = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: "Tell me 1 current major trending news headline in India for today. Just the name." }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: "Tell me 1 major trending news topic in India for today. Just the topic name." }] }] })
             });
-            const dataTopic = await resTopic.json();
-            const topic = dataTopic.candidates[0].content.parts[0].text.trim();
+            const topicData = await topicRes.json();
             
+            // अगर मॉडल 2.5 अभी आपकी Key के लिए चालू नहीं होगा, तो यहाँ एरर मैसेज आएगा
+            if (topicData.error) {
+                content.innerText = "Error: " + topicData.error.message;
+                return;
+            }
+
+            const topic = topicData.candidates[0].content.parts[0].text.trim();
             headline.innerText = "BREAKING: " + topic;
             document.getElementById('newsImg').src = `https://image.pollinations.ai/prompt/professional%20news%20visual%20for%20${encodeURIComponent(topic)}?nologo=true`;
 
-            // 2. गहरा विश्लेषण (Deep Analysis)
-            const resAnalysis = await fetch(url, {
+            // स्टेप 2: उस टॉपिक पर गहरा विश्लेषण (Deep Analysis)
+            const analysisPrompt = `Aap ek professional news analyst hain. Topic "${topic}" par 150 words ka gehra news analysis Hindi mein likhein. Namaskar se shuru karein.`;
+
+            const analysisRes = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Aap news analyst hain. Topic "${topic}" par 120 words ka gehra news analysis Hindi mein likhein. Shuruat Namaskar se karein.` }] }] })
+                body: JSON.stringify({ contents: [{ parts: [{ text: analysisPrompt }] }] })
             });
-            const dataAnalysis = await resAnalysis.json();
-            const script = dataAnalysis.candidates[0].content.parts[0].text;
-            
-            speak(script);
+            const analysisData = await analysisRes.json();
+            const finalScript = analysisData.candidates[0].content.parts[0].text;
+
+            speak(finalScript);
 
         } catch (e) {
-            content.innerText = "API Error: कृपया अपनी Key चेक करें।";
+            content.innerText = "कनेक्शन एरर! कृपया अपनी API Key और मॉडल का नाम चेक करें।";
         }
     }
 
@@ -75,8 +83,8 @@
         const msg = new SpeechSynthesisUtterance(txt);
         msg.lang = 'hi-IN';
         msg.rate = 0.9;
-
-        // पक्का करें कि हिंदी आवाज़ ही उपयोग हो
+        
+        // पक्का करें कि आवाज़ लोड हो
         const voices = window.speechSynthesis.getVoices();
         const hindiVoice = voices.find(v => v.lang.includes('hi'));
         if (hindiVoice) msg.voice = hindiVoice;
@@ -85,18 +93,14 @@
         msg.onstart = () => video.play();
         msg.onend = () => {
             video.pause();
-            setTimeout(fetchNews, 20000); // 20 सेकंड बाद अगली ताज़ा खबर
+            setTimeout(fetchGemini25News, 20000); 
         };
         
         window.speechSynthesis.speak(msg);
     }
 
-    // ब्राउज़र पाबंदी हटाने के लिए क्लिक फंक्शन
-    window.onclick = () => {
-        // आवाज़ को 'अनलॉक' करने के लिए एक खाली मैसेज चलाएं
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-        fetchNews();
-    };
+    // स्क्रीन पर कहीं भी क्लिक करते ही न्यूज़ शुरू हो जाएगी
+    window.onclick = () => fetchGemini25News();
 </script>
 </body>
 </html>
